@@ -148,5 +148,11 @@
   · 离线引擎：e:\豆包语音\直播间3D头像打印机\three.min.js（607,784 字节）
   · 快捷启动：C:\Users\Administrator\Desktop\程序\直播间3D头像打印机\直播间3D头像打印机_20261102.url
 
-【待军哥确认】是否上传 GitHub 仓库 / 是否部署到 ecojia.cn。
+【军哥】确认：上传到 GitHub，暂不部署 ecojia.cn。
+
+【AI助手】已创建并推送仓库 https://github.com/lzp5133084/live-3d-avatar-printer
+  · 仓库内容：直播间3D头像打印机.html（91,727 字节）/ three.min.js（607,784 字节）/ 程序对话记录_2026-11-02.txt
+  · 分支 main，一次性推送成功，API 校验文件齐全。
+
+【待军哥确认】是否上传 GitHub 仓库（已完成） / 是否部署到 ecojia.cn（暂缓）。
 ════════════════════════════════════════════════════
