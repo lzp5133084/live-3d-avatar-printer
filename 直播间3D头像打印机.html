@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>直播间3D头像打印机 V3.2 帝王版 · 军哥懂保</title>
+<title>直播间3D头像打印机 V3.3 帝王奖杯版 · 军哥懂保</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🖨️</text></svg>">
 <style>
 /* ========== 2027 商用级科技风 UI ========== */
@@ -198,7 +198,7 @@ input[type=checkbox]{accent-color:var(--neon);width:15px;height:15px}
   <div class="card" id="brand">
     <div class="logo">🖨️</div>
     <div>
-      <b>直播间3D头像打印机 <span style="color:var(--neon);font-size:11px">V3.2 帝王版</span></b>
+      <b>直播间3D头像打印机 <span style="color:var(--neon);font-size:11px">V3.3 帝王奖杯版</span></b>
       <div class="meta">
         <span id="fileSize">…</span> · 更新 <span id="updDate">2026-11-02</span> · 作者 军哥懂保 微信 <span>xunijiayuan</span>
       </div>
@@ -351,9 +351,9 @@ input[type=checkbox]{accent-color:var(--neon);width:15px;height:15px}
    更新：2026-11-02  修复V2全部bug + 完整直播互动工具
    ===================================================== */
 'use strict';
-const APP_VER = 'V3.2';
+const APP_VER = 'V3.3';
 const UPD_DATE = '2026-11-02';
-const MAX_SLOTS = 19;
+const MAX_SLOTS = 17;
 const isMobile = matchMedia('(max-width:860px)').matches || /Mobi|Android|iPhone/i.test(navigator.userAgent);
 
 /* ---------- 全局配置（可持久化） ---------- */
@@ -1154,9 +1154,9 @@ function loadAvatar(url, name){
 }
 
 /* =====================================================
-   ⑤ 浮雕生成（V3.1：修复头像被底座遮挡 + 像素采样错位）
+   ⑤ 成品生成：立着的「帝王奖杯 + 头像」（V3.3）
 ===================================================== */
-const SEG = 44, TEX = 96, EMB_W = 1.32, EMB_H0 = 0.20, EMB_DEPTH = 0.22;
+const SEG = 44, TEX = 96, EMB_W = 0.60, EMB_H0 = 0.20, EMB_DEPTH = 0.10;
 /* 统一把任意尺寸画布重采样到 TEX×TEX 再取像素（旧版直接读64×64造成只取左上角） */
 function samplePixels(canvas){
   const tmp = document.createElement('canvas'); tmp.width = tmp.height = TEX;
@@ -1191,62 +1191,81 @@ function buildEmboss(canvas, kind, name){
       const idx = (py*TEX + px)*4;
       const gray = (data[idx]+data[idx+1]+data[idx+2])/3;
       const alpha = data[idx+3]/255;
-      pos.setZ(i, gray/255 * EMB_DEPTH * (alpha>0.05?1:0));  // 灰度 → 高度
+      pos.setZ(i, gray/255 * EMB_DEPTH * (alpha>0.05?1:0));  // 灰度 → 浮雕高度
     }
   }
   geo.computeVertexNormals();
 
   const tex = new THREE.CanvasTexture(canvas);
   tex.anisotropy = 4;
+  // ★ 头像浮雕立在杯身正面（朝观众），不再平躺
   const face = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
-    map:tex, roughness:.55, metalness:.18, side:THREE.DoubleSide}));
-  // ★ 头像面贴在底座"上表面"（旧版把面放在了底座下方，结果被底座完全遮住）
-  face.position.z = EMB_H0;
+    map:tex, roughness:.5, metalness:.25, side:THREE.DoubleSide}));
+  face.position.set(0, 0.94, 0.352);
 
-  // 底座（在头像面下方）
-  const baseMat = kind==='gift'
-    ? new THREE.MeshStandardMaterial({color:0x2a2110, metalness:.95, roughness:.22,
-        emissive:0x3a2a08, emissiveIntensity:1})
-    : new THREE.MeshStandardMaterial({color:0x1a2436, metalness:.85, roughness:.25});
-  const base = new THREE.Mesh(new THREE.BoxGeometry(EMB_W+0.16, EMB_W+0.16, EMB_H0), baseMat);
-  base.position.z = EMB_H0/2;   // 从 0 到 EMB_H0
-
-  // 金色描边（四个细条，提升质感）
-  const edgeM = new THREE.MeshStandardMaterial({
-    color: kind==='gift'?0xfbbf24:0x4ea8d6, metalness:1, roughness:.3,
-    emissive: kind==='gift'?0x4a3200:0x0a2438});
-  const eW = EMB_W+0.18, eT = 0.05;
-  [[0, eW/2],[0,-eW/2],[eW/2,0],[-eW/2,0]].forEach(([x,y],i)=>{
-    const g2 = new THREE.BoxGeometry(i<2?eW:eT, i<2?eT:eW, eT);
-    const bar = new THREE.Mesh(g2, edgeM);
-    bar.position.set(x, y, EMB_H0);
-    base.add(bar);
-  });
-
-  // 昵称铭牌（立在底座前沿，朝向观众）
-  const plateTex = new THREE.CanvasTexture(makeNamePlate(name, kind));
-  const plate = new THREE.Mesh(new THREE.PlaneGeometry(EMB_W*0.82, EMB_W*0.2),
-    new THREE.MeshBasicMaterial({map:plateTex, transparent:true}));
-  plate.rotation.x = Math.PI/2;
-  plate.position.set(0, -(EMB_W/2 + 0.10), EMB_H0*0.55);
+  const goldM  = new THREE.MeshStandardMaterial({color:0xc98a26, metalness:1, roughness:.26});
+  const goldHi = new THREE.MeshStandardMaterial({color:0xf3be50, metalness:1, roughness:.16});
+  const jadeM  = new THREE.MeshStandardMaterial({color:0x1a1008, metalness:.3, roughness:.62});
+  const glowM  = new THREE.MeshBasicMaterial({color: kind==='gift'?0xffd76a:0x8ee4ff});
+  const accent = kind==='gift'
+    ? new THREE.MeshStandardMaterial({color:0x8e1710, metalness:.55, roughness:.4, emissive:0x2a0604})
+    : new THREE.MeshStandardMaterial({color:0x123048, metalness:.6, roughness:.35, emissive:0x061828});
 
   const grp = new THREE.Group();
-  grp.add(base); grp.add(face); grp.add(plate);
-  grp.rotation.x = -Math.PI/2;   // 平躺：局部+Z → 世界+Y（面朝上）
-  return grp;
+  const inner = new THREE.Group();
+  grp.add(inner);
+  const mk = (g2, mat, y)=>{ const m = new THREE.Mesh(g2, mat); m.position.y = y; inner.add(m); return m; };
+
+  // 1) 三级底座（暗金裙座 → 鎏金台 → 墨玉座）
+  mk(new THREE.CylinderGeometry(0.60,0.70,0.14,40), goldM, 0.07);
+  const r1 = mk(new THREE.TorusGeometry(0.62,0.03,8,44), goldHi, 0.14); r1.rotation.x = Math.PI/2;
+  mk(new THREE.CylinderGeometry(0.48,0.58,0.10,40), goldHi, 0.19);
+  mk(new THREE.CylinderGeometry(0.40,0.48,0.08,40), jadeM, 0.28);
+  // 2) 束腰杯脚
+  mk(new THREE.CylinderGeometry(0.24,0.32,0.22,28), goldM, 0.43);
+  // 3) 杯身（鎏金杯体 + 一道彩色束带）
+  mk(new THREE.CylinderGeometry(0.40,0.30,0.82,40), goldM, 0.95);
+  mk(new THREE.CylinderGeometry(0.335,0.315,0.10,40), accent, 0.60);
+  const rTop = mk(new THREE.TorusGeometry(0.40,0.035,10,48), goldHi, 1.36); rTop.rotation.x = Math.PI/2;
+  // 4) 双耳
+  [-1,1].forEach(s=>{
+    const h = new THREE.Mesh(new THREE.TorusGeometry(0.15,0.032,8,22), goldHi);
+    h.position.set(s*0.44, 1.10, 0); h.rotation.y = Math.PI/2; h.scale.set(1,1.15,1); inner.add(h);
+  });
+  // 5) 头像鎏金外框
+  const frame = new THREE.Mesh(new THREE.TorusGeometry(0.335,0.030,10,44), goldHi);
+  frame.position.set(0, 0.94, 0.350); inner.add(frame);
+  // 6) 顶冠（金环 + 三枝 + 宝珠）
+  const crown = mk(new THREE.TorusGeometry(0.15,0.025,8,26), goldHi, 1.40); crown.rotation.x = Math.PI/2;
+  for(let i=0;i<3;i++){
+    const a = i/3*Math.PI*2;
+    const sp = mk(new THREE.ConeGeometry(0.045,0.20,6), goldHi, 1.50);
+    sp.position.x = Math.cos(a)*0.10; sp.position.z = Math.sin(a)*0.10;
+  }
+  mk(new THREE.SphereGeometry(0.075,14,12), glowM, 1.46);
+  inner.add(face);
+
+  // 7) 昵称铭牌（底座正面，朝观众）
+  const plateTex = new THREE.CanvasTexture(makeNamePlate(name, kind));
+  const plate = new THREE.Mesh(new THREE.PlaneGeometry(0.78, 0.19),
+    new THREE.MeshBasicMaterial({map:plateTex, transparent:true}));
+  plate.position.set(0, 0.34, 0.56);
+  inner.add(plate);
+
+  return grp;   // ★ 立式：局部 Y 轴向上，直接立在台面上
 }
 
 /* =====================================================
-   ⑥ 槽位系统（同心圆摆放，中心1 + 第一环6 + 第二环12 = 19 位）
+   ⑥ 槽位系统（同心圆摆放，中心1 + 第一环6 + 第二环10 = 17 位）
 ===================================================== */
 function slotPos(i){
   if(i===0) return [0,0];
   if(i<=6){
     const ang = ((i-1)/6)*Math.PI*2 + 0.5;
-    return [Math.cos(ang)*1.38, Math.sin(ang)*1.38];
+    return [Math.cos(ang)*1.70, Math.sin(ang)*1.70];
   }
-  const rem = i-7, ang = (rem/12)*Math.PI*2 + 0.26;
-  return [Math.cos(ang)*2.50, Math.sin(ang)*2.50];
+  const rem = i-7, ang = (rem/10)*Math.PI*2 + 0.26;
+  return [Math.cos(ang)*2.42, Math.sin(ang)*2.42];
 }
 
 /* =====================================================
@@ -1293,8 +1312,8 @@ function stepPrint(){
   const layer = Math.min(Math.floor(progress*maxL), maxL);
   if(layer !== u.layer){ u.layer = layer; }
 
-  // 平躺浮雕沿世界Y逐层长高 = 组的局部 scale.z（V2的 scale.y 方向bug已修）
-  currentTask.scale.z = Math.max(0.02, 0.15 + 0.85*(layer/maxL));
+  // 立式奖杯沿 Y 轴逐层长高（局部 Y 与底座原点对齐，自下而上生长）
+  currentTask.scale.y = Math.max(0.02, 0.15 + 0.85*(layer/maxL));
 
   // 喷头逐行扫描（龙门架结构动画）
   const rows = 6, t = progress*maxL*rows;
@@ -1332,7 +1351,7 @@ function idleGantry(){
 }
 function finishPrint(task){
   task.userData.done = true;
-  task.scale.z = 1;
+  task.scale.y = 1;
   // 台面满员：开启自动回收时移除最早成品（其槽位为圆心，新成品补位）
   if(printedItems.length >= MAX_SLOTS){
     if(CFG.recycle){
@@ -1392,7 +1411,7 @@ function updateLabels(){
   const v = new THREE.Vector3();
   labelPool.forEach(it=>{
     if(!it.mesh.parent){ it.div.style.display='none'; return; }
-    v.copy(it.mesh.position); v.y += 0.55;
+    v.copy(it.mesh.position); v.y += 1.75;
     v.project(camera);
     if(v.z < 1 && Math.abs(v.x)<1.1 && Math.abs(v.y)<1.1){
       it.div.style.display='block';
