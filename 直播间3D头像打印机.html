@@ -1,0 +1,1821 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>直播间3D头像打印机 V3.2 帝王版 · 军哥懂保</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🖨️</text></svg>">
+<style>
+/* ========== 2027 商用级科技风 UI ========== */
+:root{
+  --bg0:#0b0703; --bg1:#1a1006; --panel:rgba(30,19,8,.74);
+  --line:rgba(232,186,96,.18); --line2:rgba(248,206,116,.42);
+  --txt:#fff5e2; --sub:#c9ab7e; --neon:#f5c451; --neon2:#ff8a3c;
+  --gold:#ffd76a; --ok:#5ed6a0; --warn:#ffa45c; --err:#f87171;
+  --r:14px; --shadow:0 10px 36px rgba(0,0,0,.55), 0 0 26px rgba(245,196,81,.07);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  overflow:hidden;background:var(--bg0);color:var(--txt);
+  font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  user-select:none;
+}
+#stage{position:fixed;inset:0}
+#stage canvas{display:block}
+/* 背景光晕 */
+#glow{position:fixed;inset:0;pointer-events:none;z-index:1;
+  background:
+   radial-gradient(600px 400px at 15% 10%,rgba(255,196,80,.10),transparent 62%),
+   radial-gradient(700px 500px at 85% 90%,rgba(255,120,40,.09),transparent 62%),
+   radial-gradient(900px 600px at 50% 110%,rgba(255,214,120,.06),transparent 70%);}
+/* ---------- 顶栏 ---------- */
+#topbar{position:fixed;top:12px;left:12px;right:12px;z-index:20;display:flex;gap:10px;align-items:flex-start;pointer-events:none}
+#topbar>*{pointer-events:auto}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:var(--shadow)}
+#brand{display:flex;align-items:center;gap:10px;padding:10px 14px}
+#brand .logo{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:20px;
+  background:linear-gradient(135deg,var(--neon),var(--neon2));box-shadow:0 0 16px rgba(245,196,81,.55)}
+#brand b{font-size:15px;letter-spacing:.5px}
+#brand .meta{font-size:11px;color:var(--sub);line-height:1.5}
+#brand .meta span{color:var(--neon)}
+#topRight{margin-left:auto;display:flex;gap:8px}
+/* ---------- 通用按钮 ---------- */
+button{font-family:inherit;cursor:pointer;border:none;color:#fff;transition:.18s}
+.btn{padding:9px 14px;border-radius:11px;font-size:13px;
+  background:linear-gradient(135deg,rgba(245,196,81,.16),rgba(255,138,60,.16));
+  border:1px solid var(--line2);display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{background:linear-gradient(135deg,rgba(245,196,81,.42),rgba(255,138,60,.42));box-shadow:0 0 18px rgba(255,190,70,.4);transform:translateY(-1px)}
+.btn:active{transform:scale(.96)}
+.btn.on{background:linear-gradient(135deg,#d99a24,#b4560c);box-shadow:0 0 18px rgba(255,190,70,.6)}
+.btn.warn{border-color:rgba(251,146,60,.4)}
+.btn.warn:hover{box-shadow:0 0 16px rgba(251,146,60,.4)}
+.iconbtn{width:38px;height:38px;border-radius:11px;font-size:17px;
+  background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(14px)}
+.iconbtn:hover{border-color:var(--line2);box-shadow:0 0 16px rgba(255,190,70,.35)}
+/* ---------- 侧面板 ---------- */
+#leftPanel{position:fixed;left:12px;top:74px;z-index:15;width:238px;padding:12px;display:flex;flex-direction:column;gap:8px;max-height:calc(100vh - 190px)}
+#rightPanel{position:fixed;right:12px;top:74px;z-index:15;width:238px;padding:12px;display:flex;flex-direction:column;gap:8px;max-height:calc(100vh - 190px)}
+.ptitle{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#f7e5bf}
+.ptitle .q{margin-left:auto;width:18px;height:18px;border-radius:50%;background:rgba(245,196,81,.15);
+  border:1px solid var(--line2);font-size:11px;display:grid;place-items:center;color:var(--neon);cursor:pointer}
+.ptitle .q:hover{background:rgba(245,196,81,.38)}
+.hint{font-size:10.5px;color:var(--sub);line-height:1.5}
+/* 队列 */
+#queueList{display:flex;flex-direction:column;gap:6px;overflow-y:auto;max-height:230px;padding-right:2px}
+#queueList::-webkit-scrollbar{width:4px}
+#queueList::-webkit-scrollbar-thumb{background:rgba(120,160,255,.3);border-radius:2px}
+.qitem{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:10px;
+  background:rgba(255,255,255,.04);border:1px solid var(--line);animation:slideIn .3s}
+@keyframes slideIn{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:none}}
+.qitem img,.qitem .ph{width:30px;height:30px;border-radius:8px;object-fit:cover;flex:none;
+  background:linear-gradient(135deg,#2b1d0d,#4a3316);display:grid;place-items:center;font-size:14px}
+.qitem .nm{flex:1;min-width:0;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qitem .tag{font-size:9px;padding:2px 6px;border-radius:6px;flex:none}
+.tag.d{background:rgba(245,196,81,.15);color:var(--neon)}
+.tag.g{background:rgba(251,191,36,.15);color:var(--gold)}
+.tag.e{background:rgba(52,211,153,.15);color:var(--ok)}
+.tag.f{background:rgba(255,138,60,.2);color:var(--neon2)}
+.qitem .del{width:20px;height:20px;border-radius:6px;background:transparent;color:var(--sub);font-size:12px;flex:none}
+.qitem .del:hover{color:var(--err);background:rgba(248,113,113,.12)}
+.empty{font-size:11px;color:var(--sub);text-align:center;padding:14px 0}
+/* 统计 */
+#stats{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.stat{padding:8px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid var(--line);text-align:center}
+.stat b{display:block;font-size:18px;background:linear-gradient(135deg,var(--neon),var(--neon2));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.stat span{font-size:10px;color:var(--sub)}
+/* 弹幕流 */
+#dmFlow{position:fixed;right:12px;bottom:86px;z-index:15;width:238px;max-height:180px;overflow:hidden;padding:10px;display:flex;flex-direction:column;gap:5px}
+#dmFlow .dm{font-size:11px;color:var(--sub);display:flex;gap:6px;align-items:center;animation:slideIn .3s;overflow:hidden}
+#dmFlow .dm b{color:#f7e5bf;font-weight:500;flex:none;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#dmFlow .dm .tx{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* ---------- 底部控制台 ---------- */
+#dock{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:20;
+  display:flex;gap:6px;padding:9px 10px;border-radius:16px;max-width:calc(100vw - 24px);overflow-x:auto}
+#dock::-webkit-scrollbar{height:0}
+#wsDot{width:7px;height:7px;border-radius:50%;background:#64748b;flex:none}
+#wsDot.on{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+#wsDot.retry{background:var(--warn);box-shadow:0 0 8px var(--warn)}
+/* ---------- 模态 ---------- */
+.modal-mask{position:fixed;inset:0;z-index:50;background:rgba(4,6,12,.6);backdrop-filter:blur(6px);
+  display:none;align-items:center;justify-content:center;padding:16px}
+.modal-mask.show{display:flex}
+.modal{width:100%;max-width:430px;max-height:82vh;overflow-y:auto;padding:20px;border-radius:18px;position:relative;
+  background:linear-gradient(160deg,rgba(44,28,12,.97),rgba(16,9,4,.97));
+  border:1px solid var(--line2);box-shadow:0 12px 48px rgba(0,0,0,.6);animation:pop .25s}
+@keyframes pop{from{opacity:0;transform:scale(.94) translateY(10px)}to{opacity:1;transform:none}}
+.modal::-webkit-scrollbar{width:5px}
+.modal::-webkit-scrollbar-thumb{background:rgba(120,160,255,.3);border-radius:3px}
+.modal h3{font-size:16px;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.modal .msub{font-size:11px;color:var(--sub);margin-bottom:14px}
+.modal .close{position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:9px;
+  background:rgba(255,255,255,.06);color:var(--sub);font-size:15px}
+.modal .close:hover{color:#fff;background:rgba(248,113,113,.25)}
+.frow{margin-bottom:13px}
+.frow label{display:flex;justify-content:space-between;font-size:12.5px;color:#f7e5bf;margin-bottom:6px}
+.frow label output{color:var(--neon)}
+input[type=range]{width:100%;height:4px;-webkit-appearance:none;appearance:none;border-radius:2px;
+  background:linear-gradient(90deg,var(--neon),var(--neon2));outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+  background:#fff;box-shadow:0 0 12px rgba(255,200,90,.9);cursor:pointer}
+input[type=text]{width:100%;padding:9px 11px;border-radius:10px;font-size:13px;color:var(--txt);
+  background:rgba(255,255,255,.05);border:1px solid var(--line);outline:none;font-family:inherit}
+input[type=text]:focus{border-color:var(--neon)}
+input[type=checkbox]{accent-color:var(--neon);width:15px;height:15px}
+.chkrow{display:flex;flex-wrap:wrap;gap:8px}
+.chk{display:flex;align-items:center;gap:5px;font-size:12px;padding:6px 10px;border-radius:9px;
+  background:rgba(255,255,255,.04);border:1px solid var(--line);cursor:pointer}
+.switch{position:relative;width:40px;height:22px;border-radius:11px;background:rgba(255,255,255,.1);cursor:pointer;transition:.2s;flex:none}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#94a3b8;transition:.2s}
+.switch.on{background:linear-gradient(135deg,var(--neon),var(--neon2))}
+.switch.on::after{left:21px;background:#fff}
+.helpsec{margin-bottom:12px;padding:11px 13px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid var(--line)}
+.helpsec b{font-size:13px;color:var(--neon);display:block;margin-bottom:4px}
+.helpsec p,.helpsec li{font-size:12px;color:#e8d3b2;line-height:1.7}
+.term{padding:10px 12px;border-radius:11px;background:rgba(255,255,255,.04);border-left:3px solid var(--neon);margin-bottom:8px}
+.term b{font-size:12.5px;color:var(--neon)}
+.term p{font-size:12px;color:#e8d3b2;line-height:1.65;margin-top:3px}
+/* 历史 */
+#histSearch{margin-bottom:10px}
+.hitem{display:flex;align-items:center;gap:9px;padding:8px;border-radius:11px;margin-bottom:6px;
+  background:rgba(255,255,255,.04);border:1px solid var(--line)}
+.hitem img,.hitem .ph{width:34px;height:34px;border-radius:9px;object-fit:cover;flex:none;
+  background:linear-gradient(135deg,#2b1d0d,#4a3316);display:grid;place-items:center;font-size:15px}
+.hitem .inf{flex:1;min-width:0}
+.hitem .inf b{font-size:12.5px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hitem .inf span{font-size:10px;color:var(--sub)}
+.hitem .ops{display:flex;gap:4px;flex:none}
+.hitem .ops button{width:26px;height:26px;border-radius:8px;font-size:12px;background:rgba(255,255,255,.05);color:var(--sub)}
+.hitem .ops button:hover{color:var(--neon);background:rgba(245,196,81,.15)}
+/* toast */
+#toasts{position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:99;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;width:max-content;max-width:90vw}
+.toast{padding:10px 18px;border-radius:12px;font-size:13px;background:rgba(34,21,10,.93);
+  border:1px solid var(--line2);box-shadow:var(--shadow);backdrop-filter:blur(10px);animation:pop .25s;max-width:88vw;text-align:center}
+.toast.ok{border-color:rgba(52,211,153,.5)}
+.toast.err{border-color:rgba(248,113,113,.55)}
+.toast.warn{border-color:rgba(251,146,60,.55)}
+/* loading */
+#loading{position:fixed;inset:0;z-index:100;background:var(--bg0);display:grid;place-items:center;transition:opacity .5s}
+#loading.hide{opacity:0;pointer-events:none}
+#loading .box{text-align:center}
+#loading .logo{width:74px;height:74px;margin:0 auto 18px;border-radius:22px;display:grid;place-items:center;font-size:38px;
+  background:linear-gradient(135deg,var(--neon),var(--neon2));animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 22px rgba(245,196,81,.45)}50%{box-shadow:0 0 52px rgba(255,138,60,.8)}}
+#loading .t1{font-size:19px;font-weight:700;letter-spacing:1px}
+#loading .t2{font-size:12px;color:var(--sub);margin-top:8px}
+#loading .bar{width:210px;height:3px;border-radius:2px;background:rgba(255,255,255,.08);margin:16px auto 0;overflow:hidden}
+#loading .bar i{display:block;height:100%;width:0;border-radius:2px;background:linear-gradient(90deg,var(--neon),var(--neon2));transition:width .3s}
+/* ---------- 三端响应式（规则13：三端全功能展示） ---------- */
+@media (max-width:860px){
+  #brand .meta{display:none}
+  #leftPanel,#rightPanel{width:196px;top:70px;max-height:calc(100vh - 175px)}
+  #leftPanel .hint,#rightPanel .hint{display:none}
+  #dmFlow{display:none}
+  .btn{padding:8px 10px;font-size:12px}
+  #dock{bottom:10px}
+}
+@media (max-width:560px){
+  #leftPanel,#rightPanel{width:158px;padding:9px}
+  #stats{grid-template-columns:1fr 1fr}
+  .stat b{font-size:15px}
+  #brand{padding:8px 10px}
+  #brand b{font-size:13px}
+  #queueList{max-height:130px}
+  #dock{gap:4px;padding:7px}
+  .btn{padding:7px 8px;font-size:11px;border-radius:9px}
+  .btn span.bl{display:none} /* 手机端按钮只显示图标省空间，功能全部保留 */
+}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="glow"></div>
+
+<!-- 顶栏 -->
+<div id="topbar">
+  <div class="card" id="brand">
+    <div class="logo">🖨️</div>
+    <div>
+      <b>直播间3D头像打印机 <span style="color:var(--neon);font-size:11px">V3.2 帝王版</span></b>
+      <div class="meta">
+        <span id="fileSize">…</span> · 更新 <span id="updDate">2026-11-02</span> · 作者 军哥懂保 微信 <span>xunijiayuan</span>
+      </div>
+    </div>
+  </div>
+  <div id="topRight">
+    <button class="iconbtn" onclick="openHelp()" title="使用说明">📖</button>
+    <button class="iconbtn" onclick="openTerms()" title="名词解析（大白话）">❓</button>
+    <button class="iconbtn" onclick="openSettings()" title="打印设置">⚙️</button>
+  </div>
+</div>
+
+<!-- 左：打印队列 -->
+<div class="card" id="leftPanel">
+  <div class="ptitle">📋 打印队列<span class="q" onclick="termTip('queue')">?</span></div>
+  <div class="hint">观众互动自动排队，礼物可插队优先打印。点 ✕ 可移除单个任务。</div>
+  <div id="queueList"><div class="empty">队列为空，去底栏点 🎭 模拟弹幕试试</div></div>
+  <div style="display:flex;gap:6px">
+    <button class="btn warn" style="flex:1;justify-content:center" onclick="clearQueue()">清空队列</button>
+  </div>
+</div>
+
+<!-- 右：统计 -->
+<div class="card" id="rightPanel">
+  <div class="ptitle">📊 实时统计<span class="q" onclick="termTip('stats')">?</span></div>
+  <div class="hint">自动记录今日互动数据，数据保存在本机，可随时查看。</div>
+  <div id="stats">
+    <div class="stat"><b id="stQueue">0</b><span>排队中</span></div>
+    <div class="stat"><b id="stDone">0</b><span>已打印</span></div>
+    <div class="stat"><b id="stDm">0</b><span>今日弹幕</span></div>
+    <div class="stat"><b id="stGift">0</b><span>今日礼物</span></div>
+  </div>
+  <div class="ptitle" style="margin-top:2px">🖨️ 打印台<span class="q" onclick="termTip('bed')">?</span></div>
+  <div class="hint" id="bedInfo">台面成品：0 / 25 个</div>
+</div>
+
+<!-- 右下：实时弹幕流 -->
+<div class="card" id="dmFlow"></div>
+
+<!-- 底部控制台（三端全部展示，规则13） -->
+<div class="card" id="dock">
+  <button class="btn" onclick="mockDanmaku()" title="模拟一条观众互动，测试全流程">🎭<span class="bl">模拟弹幕</span></button>
+  <button class="btn" onclick="addTestTask()" title="添加一个测试头像打印任务">🖼️<span class="bl">测试头像</span></button>
+  <button class="btn" id="wsBtn" onclick="toggleWs()" title="连接本地弹幕服务（BLIVE等）"><span id="wsDot"></span><span class="bl">弹幕WS</span></button>
+  <button class="btn" onclick="openHistory()" title="查看打印历史，可重播/删除">📜<span class="bl">历史记录</span></button>
+  <button class="btn" onclick="openSettings()" title="调整打印参数">🎚️<span class="bl">打印设置</span></button>
+  <button class="btn warn" onclick="clearAll()" title="移除台面全部成品">🧹<span class="bl">清空台面</span></button>
+  <button class="btn" onclick="shot()" title="保存台面截图">📷<span class="bl">截图</span></button>
+  <button class="btn" onclick="openHelp()" title="操作指引">📖<span class="bl">说明</span></button>
+</div>
+
+<!-- 模态：设置 -->
+<div class="modal-mask" id="mSet">
+  <div class="modal">
+    <button class="close" onclick="closeM('mSet')">✕</button>
+    <h3>🎚️ 打印设置</h3>
+    <div class="msub">参数实时生效并自动保存在本机，下次打开无需重设。术语点右侧 ? 查看</div>
+    <div class="frow"><label>打印速度倍率 <output id="oSpeed">1.0x</output><span class="q ptitle" style="margin:0 0 0 4px" onclick="termTip('speed')">?</span></label>
+      <input type="range" id="fSpeed" min="0.3" max="4" step="0.1" oninput="onSpeed(this.value)"></div>
+    <div class="frow"><label>打印层数（浮雕精度） <output id="oLayer">12 层</output><span class="q ptitle" style="margin:0 0 0 4px" onclick="termTip('layer')">?</span></label>
+      <input type="range" id="fLayer" min="6" max="24" step="1" oninput="onLayer(this.value)"></div>
+    <div class="frow"><label>接受哪些互动自动打印</label>
+      <div class="chkrow">
+        <label class="chk"><input type="checkbox" id="fDm" checked>💬 弹幕</label>
+        <label class="chk"><input type="checkbox" id="fGift" checked>🎁 礼物</label>
+        <label class="chk"><input type="checkbox" id="fEnter">🚪 进入直播间</label>
+        <label class="chk"><input type="checkbox" id="fFollow">➕ 关注</label>
+      </div></div>
+    <div class="frow"><label>🎁 礼物插队优先打印</label><div class="switch" id="fFirst" onclick="this.classList.toggle('on')"></div></div>
+    <div class="frow"><label>🔊 打印提示音 <span style="color:var(--sub);font-weight:400">（点开关右侧试听）</span></label>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="switch on" id="fSound" onclick="this.classList.toggle('on')"></div>
+        <button class="btn" style="padding:5px 11px;font-size:12px" onclick="testSound()">🔊 试听音效</button>
+      </div></div>
+    <div class="frow"><label>♻️ 台面满时自动回收最早成品</label><div class="switch on" id="fRecycle" onclick="this.classList.toggle('on')"></div></div>
+    <div class="frow"><label>弹幕服务地址（WS） <span class="q ptitle" style="margin:0 0 0 4px" onclick="termTip('ws')">?</span></label>
+      <input type="text" id="fWs" placeholder="ws://127.0.0.1:2345"></div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn on" style="flex:1;justify-content:center" onclick="saveSettings()">💾 保存设置</button>
+      <button class="btn" style="justify-content:center" onclick="resetSettings()">恢复默认</button>
+    </div>
+  </div>
+</div>
+
+<!-- 模态：历史 -->
+<div class="modal-mask" id="mHist">
+  <div class="modal">
+    <button class="close" onclick="closeM('mHist')">✕</button>
+    <h3>📜 打印历史</h3>
+    <div class="msub">记录保存在本机。点击 🔁 可把某条记录重新加入打印队列（快速调用）。</div>
+    <div class="frow" id="histSearch"><input type="text" id="histKw" placeholder="🔍 输入昵称搜索…" oninput="renderHist()"></div>
+    <div id="histList"></div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn warn" style="flex:1;justify-content:center" onclick="clearHist()">🗑️ 清空历史</button>
+      <button class="btn" style="justify-content:center" onclick="exportHist()">📤 导出TXT</button>
+    </div>
+  </div>
+</div>
+
+<!-- 模态：帮助 -->
+<div class="modal-mask" id="mHelp">
+  <div class="modal">
+    <button class="close" onclick="closeM('mHelp')">✕</button>
+    <h3>📖 使用说明</h3>
+    <div class="msub">三步开启直播互动打印，全程不需要编写任何代码。</div>
+    <div class="helpsec"><b>第①步：单机演示（0配置）</b>
+      <p>点底部「🎭模拟弹幕」或「🖼️测试头像」，立即观看3D打印全过程。适合先熟悉界面与镜头操作：鼠标左键旋转 / 滚轮缩放 / 右键平移，手机单指旋转、双指缩放。</p></div>
+    <div class="helpsec"><b>第②步：连接直播间弹幕</b>
+      <p>在电脑上启动弹幕抓取工具（如 BLIVE Message Jar、blivechat 等），开启其本地 WebSocket 转发；回到本程序点「📡弹幕WS」，灯变🟢即连上。观众发弹幕/送礼物，头像就会自动进入打印队列。</p></div>
+    <div class="helpsec"><b>第③步：参数与 OBS 挂载</b>
+      <p>「⚙️设置」里可调节打印速度、层数、互动类型过滤；「📷截图」可导出高清台面图片。用 OBS 捕获本浏览器窗口即可上直播间画面。</p></div>
+    <div class="helpsec"><b>常见问题</b>
+      <ul style="margin-left:16px">
+        <li>WS连不上？→ 确认弹幕工具已启动、端口与设置中地址一致、防火墙放行。</li>
+        <li>头像变成彩色方块？→ 头像图网络受限时程序会自动生成昵称首字头像，功能不受影响。</li>
+        <li>台面太乱？→ 「🧹清空台面」一键清理；开启自动回收可防卡顿。</li>
+      </ul></div>
+    <div class="helpsec"><b>手机端说明</b>
+      <p>手机浏览器打开本页即为手机端：3D演示、队列、历史、设置全部可用；「📡弹幕WS」需连接电脑本地服务，请到电脑端使用（点击会提示）。</p></div>
+  </div>
+</div>
+
+<!-- 模态：术语 -->
+<div class="modal-mask" id="mTerm">
+  <div class="modal">
+    <button class="close" onclick="closeM('mTerm')">✕</button>
+    <h3>❓ 名词解析（大白话）</h3>
+    <div class="msub">不用懂技术，看这一页就够了。</div>
+    <div id="termList"></div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<!-- 启动加载 -->
+<div id="loading">
+  <div class="box">
+    <div class="logo">🖨️</div>
+    <div class="t1">直播间3D头像打印机</div>
+    <div class="t2" id="loadTip">正在加载 3D 引擎（国内源优先）…</div>
+    <div class="bar"><i id="loadBar"></i></div>
+    <div class="t2" style="margin-top:14px">作者 军哥懂保 · 微信 xunijiayuan</div>
+  </div>
+</div>
+
+<script>
+/* =====================================================
+   直播间3D头像打印机 V3
+   作者：军哥懂保（微信 xunijiayuan）
+   更新：2026-11-02  修复V2全部bug + 完整直播互动工具
+   ===================================================== */
+'use strict';
+const APP_VER = 'V3.2';
+const UPD_DATE = '2026-11-02';
+const MAX_SLOTS = 19;
+const isMobile = matchMedia('(max-width:860px)').matches || /Mobi|Android|iPhone/i.test(navigator.userAgent);
+
+/* ---------- 全局配置（可持久化） ---------- */
+const DEFAULTS = {
+  speed: 1.0,        // 速度倍率
+  layer: 12,         // 最大层数
+  dm: true, gift: true, enter: false, follow: false,  // 互动类型过滤
+  giftFirst: true, sound: true, recycle: true,
+  wsUrl: 'ws://127.0.0.1:2345'
+};
+let CFG = loadJSON('dp3_cfg', {...DEFAULTS});
+
+/* ---------- 运行状态 ---------- */
+let scene, camera, renderer, orbit;
+let nozzle, gantryZ, glowTip, scanLine;
+let printQueue = [];      // 待打印 mesh 队列
+let printedItems = [];    // 台面成品
+let currentTask = null;
+let progress = 0;
+let labelPool = [];
+let tweens = [];
+let ws = null, wsOn = false, wsRetryTimer = null;
+let todayKey = new Date().toISOString().slice(0,10);
+let stats = loadJSON('dp3_stats', {date:todayKey, dm:0, gift:0, enter:0, follow:0});
+let history = loadJSON('dp3_hist', []);
+if(stats.date !== todayKey){ stats = {date:todayKey, dm:0, gift:0, enter:0, follow:0}; }
+
+function loadJSON(k, def){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : def; }catch(e){ return def; } }
+function saveJSON(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+
+/* =====================================================
+   ① 3D 引擎加载（国内源优先，多源容错——规则2）
+===================================================== */
+const CDN = [
+  ['./three.min.js', '本地引擎（离线可用）'],
+  ['https://registry.npmmirror.com/three/0.147.0/files/build/three.min.js', 'npmmirror 国内源'],
+  ['https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js', 'jsdelivr 备用源'],
+  ['https://unpkg.com/three@0.147.0/build/three.min.js', 'unpkg 海外源'],
+];
+function loadScript(src){
+  return new Promise((ok, no)=>{
+    const s = document.createElement('script');
+    s.src = src; s.onload = ok; s.onerror = ()=>{ s.remove(); no(); };
+    document.head.appendChild(s);
+  });
+}
+async function boot(){
+  for(const [url, name] of CDN){
+    setLoad(`正在加载 3D 引擎（${name}）…`, 35);
+    try{ await loadScript(url); if(window.THREE){ setLoad(`3D 引擎就绪（${name}）`, 70); break; } }
+    catch(e){ console.warn('CDN失败:', name); }
+  }
+  if(!window.THREE){
+    setLoad('❌ 3D引擎加载失败，请检查网络后点击重试', 100, true);
+    return;
+  }
+  try{ initScene(); }catch(e){
+    console.error(e);
+    setLoad('❌ 初始化异常：' + e.message, 100, true);
+    return;
+  }
+  setLoad('加载完成', 100);
+  setTimeout(()=>{ document.getElementById('loading').classList.add('hide'); toast('✅ 就绪！点 🎭 模拟弹幕 立即体验', 'ok'); }, 350);
+}
+function setLoad(txt, pct, failed){
+  document.getElementById('loadTip').innerHTML = failed ? txt + ' <a href="javascript:location.reload()" style="color:var(--neon)">↻重试</a>' : txt;
+  document.getElementById('loadBar').style.width = pct + '%';
+}
+
+/* =====================================================
+   ② 场景搭建（金碧辉煌宫殿大厅 + 龙头铡/虎头铡式打印机）
+===================================================== */
+const BED_Y = 0.30;   // 打印台面高度（成品与喷头基准）
+function initScene(){
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x150b04);
+  scene.fog = new THREE.Fog(0x1a0d05, 20, 46);
+
+  camera = new THREE.PerspectiveCamera(52, innerWidth/innerHeight, 0.1, 200);
+  camera.position.set(11.6, 9.2, 11.6);
+
+  renderer = new THREE.WebGLRenderer({antialias:true, preserveDrawingBuffer:true});
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, isMobile?1.5:2));
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 0.78;
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  document.getElementById('stage').appendChild(renderer.domElement);
+
+  orbit = new MiniOrbit(camera, renderer.domElement, new THREE.Vector3(0,4.0,0));
+  scene.environment = makeEnvTex();
+
+  // 暖金布光：殿堂主光 + 霞光补光 + 金顶轮廓
+  const key = new THREE.DirectionalLight(0xffe9c4, 1.0); key.position.set(7,15,7); scene.add(key);
+  const fill = new THREE.DirectionalLight(0xff9a4d, 0.55); fill.position.set(-9,7,-7); scene.add(fill);
+  const rim = new THREE.DirectionalLight(0xffc85a, 0.7); rim.position.set(0,5,-12); scene.add(rim);
+  scene.add(new THREE.HemisphereLight(0x6d4318, 0x150a04, 0.8));
+  scene.add(new THREE.AmbientLight(0x6a5236, 0.55));
+  const spot = new THREE.PointLight(0xffd071, 0.8, 18); spot.position.set(0,6.6,1.4); scene.add(spot);
+  window._spot = spot;
+  const warmA = new THREE.PointLight(0xff8a3c, 0.6, 11); warmA.position.set(-4.2,2.6,-2.2); scene.add(warmA);
+  const warmB = new THREE.PointLight(0xffe09a, 0.5, 10); warmB.position.set(4.0,3.4,2.4); scene.add(warmB);
+  const ceilingL = new THREE.PointLight(0xffc25e, 0.5, 24); ceilingL.position.set(0,9.4,0); scene.add(ceilingL);
+
+  buildPalace();
+  buildLuxBase();
+  buildLuxFrame();
+  buildSpool();
+  buildParticles();
+
+  window.addEventListener('resize', ()=>{
+    camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+  });
+  animate();
+}
+
+/* 径向光晕贴图 */
+function makeRadialTexture(){
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const g = c.getContext('2d');
+  const gd = g.createRadialGradient(128,128,0, 128,128,128);
+  gd.addColorStop(0,'rgba(255,196,96,.62)');
+  gd.addColorStop(.35,'rgba(230,140,50,.20)');
+  gd.addColorStop(1,'rgba(0,0,0,0)');
+  g.fillStyle = gd; g.fillRect(0,0,256,256);
+  return new THREE.CanvasTexture(c);
+}
+
+/* 暖金环境反射贴图（让鎏金材质真的有金属光泽） */
+function makeEnvTex(){
+  const c = document.createElement('canvas'); c.width = 512; c.height = 256;
+  const g = c.getContext('2d');
+  const lg = g.createLinearGradient(0,0,0,256);
+  lg.addColorStop(0,'#3a2408');
+  lg.addColorStop(.42,'#9a6a20');
+  lg.addColorStop(.56,'#c08e35');
+  lg.addColorStop(1,'#160b02');
+  g.fillStyle = lg; g.fillRect(0,0,512,256);
+  for(let i=0;i<5;i++){
+    const x = Math.random()*512, y = 40 + Math.random()*150;
+    const rg = g.createRadialGradient(x,y,0,x,y,80);
+    rg.addColorStop(0,'rgba(255,240,200,.7)');
+    rg.addColorStop(1,'rgba(255,240,200,0)');
+    g.fillStyle = rg; g.fillRect(x-80,y-80,160,160);
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.mapping = THREE.EquirectangularReflectionMapping;
+  t.encoding = THREE.sRGBEncoding;
+  return t;
+}
+
+/* ---------- 程序化贴图（金殿材质） ---------- */
+function makeTex(w,h,repX,repY,draw){
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(repX, repY);
+  t.anisotropy = 4;
+  t.encoding = THREE.sRGBEncoding;
+  return t;
+}
+
+/* ---------- 金碧辉煌 · 宫殿大厅 ---------- */
+function buildPalace(){
+  const R = 16.6;
+  const goldM  = new THREE.MeshStandardMaterial({color:0xc98a26, metalness:1, roughness:.24});
+  const goldHi = new THREE.MeshStandardMaterial({color:0xf3be50, metalness:1, roughness:.15});
+  const darkG  = new THREE.MeshStandardMaterial({color:0x6d4a14, metalness:1, roughness:.36});
+
+  // 地面：暗金大理石
+  const floorT = makeTex(512,512,5,5,(g,w,h)=>{
+    g.fillStyle = '#1b0e06'; g.fillRect(0,0,w,h);
+    for(let i=0;i<70;i++){
+      let x = Math.random()*w, y = Math.random()*h;
+      g.beginPath(); g.moveTo(x,y);
+      for(let k=0;k<6;k++){ x += (Math.random()-0.5)*110; y += (Math.random()-0.5)*110; g.lineTo(x,y); }
+      g.strokeStyle = i%4===0 ? 'rgba(235,186,86,.17)' : 'rgba(130,78,32,.22)';
+      g.lineWidth = 0.5 + Math.random()*1.8; g.stroke();
+    }
+    g.strokeStyle = 'rgba(205,155,62,.24)'; g.lineWidth = 2; g.strokeRect(1,1,w-2,h-2);
+  });
+  const floor = new THREE.Mesh(new THREE.CircleGeometry(R+2, 96),
+    new THREE.MeshStandardMaterial({map:floorT, color:0x6b5432, metalness:.18, roughness:.56}));
+  floor.rotation.x = -Math.PI/2; floor.position.y = -0.02; scene.add(floor);
+
+  // 中央金红光晕
+  const halo = new THREE.Mesh(new THREE.CircleGeometry(9.6, 48),
+    new THREE.MeshBasicMaterial({map:makeRadialTexture(), transparent:true, opacity:.3, depthWrite:false}));
+  halo.rotation.x = -Math.PI/2; halo.position.y = 0.004; scene.add(halo);
+
+  // 红毯 + 双层金边
+  const carpet = new THREE.Mesh(new THREE.CircleGeometry(5.1, 64),
+    new THREE.MeshStandardMaterial({map:makeTex(512,512,1,1,(g,w,h)=>{
+      g.fillStyle = '#4d0f0c'; g.fillRect(0,0,w,h);
+      const rg = g.createRadialGradient(w/2,h/2,10, w/2,h/2,w*0.55);
+      rg.addColorStop(0,'#5c120e'); rg.addColorStop(1,'#2a0605');
+      g.fillStyle = rg; g.fillRect(0,0,w,h);
+      for(let i=0;i<16;i++){
+        const a = i/16*Math.PI*2;
+        g.strokeStyle = 'rgba(232,182,92,.42)'; g.lineWidth = 3;
+        g.beginPath(); g.moveTo(w/2,h/2);
+        g.lineTo(w/2+Math.cos(a)*w*0.30, h/2+Math.sin(a)*w*0.30); g.stroke();
+      }
+      g.strokeStyle = '#d9ab52'; g.lineWidth = 14; g.beginPath(); g.arc(w/2,h/2,w*0.40,0,Math.PI*2); g.stroke();
+      g.strokeStyle = 'rgba(255,222,148,.6)'; g.lineWidth = 4; g.beginPath(); g.arc(w/2,h/2,w*0.345,0,Math.PI*2); g.stroke();
+      g.fillStyle = 'rgba(244,200,112,.6)'; g.beginPath(); g.arc(w/2,h/2,26,0,Math.PI*2); g.fill();
+    }), metalness:.05, roughness:.86}));
+  carpet.rotation.x = -Math.PI/2; carpet.position.y = 0.012; scene.add(carpet);
+  const cRing = new THREE.Mesh(new THREE.TorusGeometry(5.14,0.075,8,96), goldM);
+  cRing.rotation.x = Math.PI/2; cRing.position.y = 0.03; scene.add(cRing);
+
+  // 环形宫墙（金框红漆壁板）
+  const wallT = makeTex(512,512,4,2,(g,w,h)=>{
+    g.fillStyle = '#2a0d06'; g.fillRect(0,0,w,h);
+    const pw = w/2, ph = h/2;
+    for(let i=0;i<2;i++)for(let j=0;j<2;j++){
+      const x=i*pw+14, y=j*ph+14, bw=pw-28, bh=ph-28;
+      const lg = g.createLinearGradient(0,y,0,y+bh);
+      lg.addColorStop(0,'#3f1509'); lg.addColorStop(.45,'#5c1f10'); lg.addColorStop(1,'#2b0d06');
+      g.fillStyle = lg; g.fillRect(x,y,bw,bh);
+      g.strokeStyle = '#c8973c'; g.lineWidth = 6; g.strokeRect(x,y,bw,bh);
+      g.strokeStyle = 'rgba(255,225,150,.45)'; g.lineWidth = 2; g.strokeRect(x+9,y+9,bw-18,bh-18);
+      g.fillStyle = 'rgba(222,172,72,.26)';
+      g.beginPath(); g.arc(x+bw/2, y+bh/2, Math.min(bw,bh)*0.17, 0, Math.PI*2); g.fill();
+      g.strokeStyle = 'rgba(255,215,120,.5)'; g.lineWidth = 2;
+      g.beginPath(); g.arc(x+bw/2, y+bh/2, Math.min(bw,bh)*0.22, 0, Math.PI*2); g.stroke();
+    }
+  });
+  const wall = new THREE.Mesh(new THREE.CylinderGeometry(R,R,14,72,1,true),
+    new THREE.MeshStandardMaterial({map:wallT, metalness:.28, roughness:.62, side:THREE.BackSide}));
+  wall.position.y = 7; scene.add(wall);
+
+  // 金色藻井穹顶
+  const ceilT = makeTex(512,512,6,6,(g,w,h)=>{
+    g.fillStyle = '#3a2205'; g.fillRect(0,0,w,h);
+    const n = 4, s = w/n;
+    for(let i=0;i<n;i++)for(let j=0;j<n;j++){
+      const x=i*s, y=j*s;
+      const lg = g.createRadialGradient(x+s/2,y+s/2,4, x+s/2,y+s/2,s*0.7);
+      lg.addColorStop(0,'#ffe0a0'); lg.addColorStop(.5,'#c99a3e'); lg.addColorStop(1,'#5a3c10');
+      g.fillStyle = lg; g.fillRect(x+4,y+4,s-8,s-8);
+      g.strokeStyle = '#241505'; g.lineWidth = 5; g.strokeRect(x,y,s,s);
+      g.strokeStyle = 'rgba(255,235,180,.32)'; g.lineWidth = 2; g.strokeRect(x+9,y+9,s-18,s-18);
+    }
+  });
+  const ceil = new THREE.Mesh(new THREE.CircleGeometry(R, 72),
+    new THREE.MeshStandardMaterial({map:ceilT, metalness:.85, roughness:.34}));
+  ceil.rotation.x = Math.PI/2; ceil.position.y = 13.9; scene.add(ceil);
+
+  // 八根蟠金柱
+  for(let i=0;i<8;i++){
+    const a = i/8*Math.PI*2 + Math.PI/8;
+    const g = new THREE.Group();
+    const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.62,0.80,0.5,20), darkG); foot.position.y=0.25; g.add(foot);
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.36,0.44,12.4,24), goldM); shaft.position.y=6.7; g.add(shaft);
+    for(let k=0;k<4;k++){
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.45,0.048,8,24), goldHi);
+      ring.rotation.x = Math.PI/2; ring.position.y = 1.9+k*2.9; g.add(ring);
+    }
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(1.15,0.32,1.15), goldM); cap.position.y=13.0; g.add(cap);
+    g.position.set(Math.cos(a)*15.9, 0, Math.sin(a)*15.9); scene.add(g);
+  }
+
+  // 九重金殿吊灯
+  const chand = new THREE.Group();
+  const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.10,0.10,2.6,12), goldM); rod.position.y=12.6; chand.add(rod);
+  const hub = new THREE.Mesh(new THREE.SphereGeometry(0.44,20,16), goldM); hub.position.y=11.2; chand.add(hub);
+  const tiers = [[1.7,12],[1.2,9],[0.75,6]];
+  tiers.forEach(([r,n], ti)=>{
+    const y = 10.9 - ti*0.55;
+    for(let i=0;i<n;i++){
+      const a = i/n*Math.PI*2 + ti*0.32;
+      const orb = new THREE.Mesh(new THREE.SphereGeometry(0.11-ti*0.018,10,8),
+        new THREE.MeshBasicMaterial({color:0xffe6a8}));
+      orb.position.set(Math.cos(a)*r, y, Math.sin(a)*r); chand.add(orb);
+    }
+    const bar = new THREE.Mesh(new THREE.TorusGeometry(r,0.032,6,32), goldM);
+    bar.rotation.x = Math.PI/2; bar.position.y = y; chand.add(bar);
+  });
+  scene.add(chand);
+  window._chand = chand;
+}
+
+/* ---------- 打印台（三层鎏金玉座 + 发光环 + 品牌铭牌） ---------- */
+function buildLuxBase(){
+  const dark   = new THREE.MeshStandardMaterial({color:0x26150a, metalness:.9, roughness:.3});
+  const goldM  = new THREE.MeshStandardMaterial({color:0xc98a26, metalness:1, roughness:.24});
+  const goldHi = new THREE.MeshStandardMaterial({color:0xf3be50, metalness:1, roughness:.15});
+  const jade   = new THREE.MeshStandardMaterial({color:0x1a1008, metalness:.22, roughness:.72});
+  const glow   = new THREE.MeshBasicMaterial({color:0xffc45a});
+
+  // 第一层：暗金裙座
+  const base1 = new THREE.Mesh(new THREE.CylinderGeometry(3.62,3.82,0.20,72), dark);
+  base1.position.y = 0.10; scene.add(base1);
+  const goldRing = new THREE.Mesh(new THREE.TorusGeometry(3.68,0.04,10,96), goldM);
+  goldRing.rotation.x = Math.PI/2; goldRing.position.y = 0.21; scene.add(goldRing);
+  // 第二层：鎏金圆台
+  const base2 = new THREE.Mesh(new THREE.CylinderGeometry(3.30,3.52,0.16,72), goldM);
+  base2.position.y = 0.28; scene.add(base2);
+  const ring2 = new THREE.Mesh(new THREE.TorusGeometry(3.34,0.05,10,96), goldHi);
+  ring2.rotation.x = Math.PI/2; ring2.position.y = 0.37; scene.add(ring2);
+  // 第三层：墨玉台面
+  const base3 = new THREE.Mesh(new THREE.CylinderGeometry(3.10,3.24,0.10,72), jade);
+  base3.position.y = 0.41; scene.add(base3);
+  const bed = new THREE.Mesh(new THREE.CylinderGeometry(3.05,3.10,0.05,72),
+    new THREE.MeshStandardMaterial({color:0x160b05, metalness:.25, roughness:.62}));
+  bed.position.y = BED_Y - 0.028; scene.add(bed);
+
+  // 台面发光环
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(3.0,0.045,12,96), glow);
+  ring.rotation.x = Math.PI/2; ring.position.y = BED_Y; scene.add(ring);
+  window._ring = ring;
+
+  // 台面鎏金同心刻线（贵气纹样）
+  [2.42, 1.72].forEach((r, i)=>{
+    const cRing = new THREE.Mesh(new THREE.TorusGeometry(r, 0.016, 6, 96),
+      new THREE.MeshStandardMaterial({color:i?0xa8752a:0xd8a63e, metalness:1, roughness:.35}));
+    cRing.rotation.x = Math.PI/2; cRing.position.y = BED_Y + 0.006; scene.add(cRing);
+  });
+
+  // 台面暗金网格
+  const grid2 = new THREE.GridHelper(5.6, 14, 0x8a6520, 0x4a3512);
+  grid2.position.y = BED_Y + 0.002; scene.add(grid2);
+
+  // 中心打印区
+  const zone = new THREE.Mesh(new THREE.PlaneGeometry(1.8,1.8),
+    new THREE.MeshBasicMaterial({color:0xffc451, transparent:true, opacity:0.09, side:THREE.DoubleSide}));
+  zone.rotation.x = -Math.PI/2; zone.position.y = BED_Y + 0.004; scene.add(zone);
+  window._zone = zone;
+
+  // 台沿 16 颗金钉
+  for(let i=0;i<16;i++){
+    const a = i/16*Math.PI*2;
+    const stud = new THREE.Mesh(new THREE.SphereGeometry(0.055,8,6), goldHi);
+    stud.position.set(Math.cos(a)*3.44, 0.37, Math.sin(a)*3.44); scene.add(stud);
+  }
+
+  // 品牌铭牌（台座正面）
+  const pc = document.createElement('canvas'); pc.width = 640; pc.height = 128;
+  const pg = pc.getContext('2d');
+  pg.fillStyle = 'rgba(20,11,3,.94)'; pg.fillRect(0,0,640,128);
+  pg.strokeStyle = 'rgba(232,183,78,.9)'; pg.lineWidth = 4; pg.strokeRect(5,5,630,118);
+  pg.fillStyle = '#ffd76a'; pg.font = 'bold 40px "Microsoft YaHei",sans-serif'; pg.textAlign='center';
+  pg.fillText('军哥懂保 · 帝王 3D 打印殿', 320, 54);
+  pg.fillStyle = '#c9ab7e'; pg.font = '22px "Microsoft YaHei",sans-serif';
+  pg.fillText('DRAGON & TIGER · LIVE AVATAR PRINTER', 320, 96);
+  const plate = new THREE.Mesh(new THREE.PlaneGeometry(3.1, 0.62),
+    new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(pc), transparent:true}));
+  plate.position.set(0, 0.34, 3.73); scene.add(plate);
+
+  // 四周氛围灯条
+  for(let i=0;i<8;i++){
+    const a = i/8*Math.PI*2;
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(0.28,0.02,0.08), glow);
+    bar.position.set(Math.cos(a)*3.4, 0.19, Math.sin(a)*3.4);
+    bar.rotation.y = -a; scene.add(bar);
+  }
+}
+
+/* ---------- 鎏金龙首（红瞳 · 张口 · 龙角鬃毛） ---------- */
+function buildDragonHead(){
+  const g = new THREE.Group();
+  const gold   = new THREE.MeshStandardMaterial({color:0xe0ab3e, metalness:1, roughness:.2});
+  const goldHi = new THREE.MeshStandardMaterial({color:0xf3be50, metalness:1, roughness:.14});
+  const darkG  = new THREE.MeshStandardMaterial({color:0x9a6b18, metalness:1, roughness:.34});
+  const eyeM   = new THREE.MeshBasicMaterial({color:0xff3b1e});
+
+  const head = new THREE.Mesh(new THREE.BoxGeometry(1.05,0.78,0.90), gold);
+  head.position.y = 0.10; g.add(head);
+  const browL = new THREE.Mesh(new THREE.BoxGeometry(1.12,0.12,0.16), goldHi);
+  browL.position.set(0,0.40,0.30); g.add(browL);
+  const snout = new THREE.Mesh(new THREE.BoxGeometry(0.74,0.42,0.52), gold);
+  snout.position.set(0,-0.12,0.62); g.add(snout);
+  const jaw = new THREE.Mesh(new THREE.BoxGeometry(0.68,0.16,0.50), darkG);
+  jaw.position.set(0,-0.44,0.60); jaw.rotation.x = 0.24; g.add(jaw);
+  [-0.22,0.22].forEach(x=>{
+    const f = new THREE.Mesh(new THREE.ConeGeometry(0.055,0.20,8),
+      new THREE.MeshStandardMaterial({color:0xfff4dc, metalness:.2, roughness:.4}));
+    f.position.set(x,-0.31,0.82); f.rotation.x = Math.PI; g.add(f);
+  });
+  const nose = new THREE.Mesh(new THREE.SphereGeometry(0.10,10,8), darkG);
+  nose.position.set(0,0.06,0.90); g.add(nose);
+  [-0.28,0.28].forEach(x=>{
+    const e = new THREE.Mesh(new THREE.SphereGeometry(0.085,14,12), eyeM);
+    e.position.set(x,0.22,0.42); e.scale.set(0.9,0.62,1); g.add(e);
+    const lid = new THREE.Mesh(new THREE.BoxGeometry(0.30,0.09,0.10), goldHi);
+    lid.position.set(x,0.31,0.44); lid.rotation.z = x<0?0.22:-0.22; g.add(lid);
+    const brow = new THREE.Mesh(new THREE.BoxGeometry(0.34,0.06,0.08), darkG);
+    brow.position.set(x,0.39,0.46); brow.rotation.z = x<0?0.28:-0.28; g.add(brow);
+  });
+  [-0.34,0.34].forEach(x=>{
+    const horn = new THREE.Mesh(new THREE.ConeGeometry(0.13,0.88,10), darkG);
+    horn.position.set(x,0.72,-0.24); horn.rotation.set(-0.62,0,x<0?0.3:-0.3); g.add(horn);
+  });
+  for(let i=0;i<9;i++){
+    const a = -1.1 + i*0.275;
+    const sp = new THREE.Mesh(new THREE.ConeGeometry(0.075,0.5,6), darkG);
+    sp.position.set(Math.sin(a)*0.56, 0.30+Math.cos(a)*0.42, -0.46);
+    sp.rotation.set(-0.95,0,-a*0.9); g.add(sp);
+  }
+  [-1,1].forEach(s=>{
+    const w1 = new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,0.85,6), goldHi);
+    w1.position.set(s*0.42,-0.18,0.72); w1.rotation.set(1.2,0,s*0.55); g.add(w1);
+    const w2 = new THREE.Mesh(new THREE.CylinderGeometry(0.017,0.017,0.5,6), goldHi);
+    w2.position.set(s*0.64,-0.36,0.78); w2.rotation.set(1.4,0,s*0.9); g.add(w2);
+  });
+  return g;
+}
+
+/* ---------- 鎏金虎首（金瞳 · 王字 · 虎纹） ---------- */
+function buildTigerHead(){
+  const g = new THREE.Group();
+  const gold  = new THREE.MeshStandardMaterial({color:0xc98a26, metalness:1, roughness:.24});
+  const dark  = new THREE.MeshStandardMaterial({color:0x3a2410, metalness:.7, roughness:.4});
+  const eyeM  = new THREE.MeshBasicMaterial({color:0xffcc3d});
+  const bone  = new THREE.MeshStandardMaterial({color:0xfff4dc, metalness:.2, roughness:.42});
+
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.42,18,14), gold); g.add(head);
+  // 鬃毛（一圈尖刺，增加凶悍感）
+  for(let i=0;i<14;i++){
+    const a = i/14*Math.PI*2;
+    const m = new THREE.Mesh(new THREE.ConeGeometry(0.09,0.30,6), dark);
+    m.position.set(Math.cos(a)*0.42, Math.sin(a)*0.40 - 0.02, -0.16);
+    m.rotation.set(Math.sin(a)*-0.9, 0, -Math.cos(a)*0.9);
+    g.add(m);
+  }
+  const snout = new THREE.Mesh(new THREE.SphereGeometry(0.24,14,10), gold);
+  snout.position.set(0,-0.16,0.34); snout.scale.set(1.2,0.8,0.9); g.add(snout);
+  const jaw = new THREE.Mesh(new THREE.BoxGeometry(0.36,0.16,0.30), dark);
+  jaw.position.set(0,-0.38,0.32); g.add(jaw);
+  [-0.13,0.13].forEach(x=>{
+    const f = new THREE.Mesh(new THREE.ConeGeometry(0.05,0.22,6), bone);
+    f.position.set(x,-0.30,0.45); f.rotation.x = Math.PI; g.add(f);
+  });
+  const nose = new THREE.Mesh(new THREE.SphereGeometry(0.07,8,6), dark);
+  nose.position.set(0,-0.10,0.50); g.add(nose);
+  [-0.30,0.30].forEach(x=>{
+    const ear = new THREE.Mesh(new THREE.SphereGeometry(0.14,10,8), gold);
+    ear.position.set(x,0.36,-0.02); ear.scale.set(1,0.8,0.55); g.add(ear);
+    const inner = new THREE.Mesh(new THREE.SphereGeometry(0.08,8,6), dark);
+    inner.position.set(x,0.36,0.06); inner.scale.set(1,0.75,0.5); g.add(inner);
+  });
+  [-0.16,0.16].forEach(x=>{
+    const e = new THREE.Mesh(new THREE.SphereGeometry(0.075,10,8), eyeM);
+    e.position.set(x,0.10,0.36); g.add(e);
+  });
+  // 额头「王」字
+  [[0,0.30,0.24,0.05,0.02],[0,0.24,0.18,0.03,0.02],[0,0.18,0.24,0.05,0.02]].forEach(([x,y,ww,hh])=>{
+    const b = new THREE.Mesh(new THREE.BoxGeometry(ww,hh,0.04), dark);
+    b.position.set(x,y,0.33); g.add(b);
+  });
+  // 虎纹
+  for(let i=0;i<3;i++){
+    const s = new THREE.Mesh(new THREE.BoxGeometry(0.10,0.03,0.03), dark);
+    s.position.set(-0.34+i*0.03, 0.02-i*0.10, 0.30); s.rotation.z = 0.4; g.add(s);
+    const s2 = new THREE.Mesh(new THREE.BoxGeometry(0.10,0.03,0.03), dark);
+    s2.position.set(0.34-i*0.03, 0.02-i*0.10, 0.30); s2.rotation.z = -0.4; g.add(s2);
+  }
+  return g;
+}
+
+/* ---------- 龙头铡 / 虎头铡 造型的打印龙门 ---------- */
+function buildLuxFrame(){
+  const goldM   = new THREE.MeshStandardMaterial({color:0xc98a26, metalness:1, roughness:.24});
+  const goldHi  = new THREE.MeshStandardMaterial({color:0xf3be50, metalness:1, roughness:.14});
+  const darkGold= new THREE.MeshStandardMaterial({color:0x8a5f1c, metalness:1, roughness:.3});
+  const lacquer = new THREE.MeshStandardMaterial({color:0x4a120c, metalness:.4, roughness:.4});
+  const steel   = new THREE.MeshStandardMaterial({color:0xe4ebf5, metalness:1, roughness:.1});
+  const glowM   = new THREE.MeshBasicMaterial({color:0xffc451});
+
+  // ---- 双主柱（左龙柱 / 右虎柱） ----
+  [-3.15, 3.15].forEach(x=>{
+    const grp = new THREE.Group();
+    const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.52,0.66,0.38,24), darkGold);
+    foot.position.y = 0.19; grp.add(foot);
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.26,0.34,5.4,24), goldM);
+    shaft.position.y = 3.08; grp.add(shaft);
+    for(let k=0;k<4;k++){
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.33,0.055,8,28), goldHi);
+      ring.rotation.x = Math.PI/2; ring.position.y = 1.1 + k*1.25; grp.add(ring);
+    }
+    const capUnder = new THREE.Mesh(new THREE.BoxGeometry(0.98,0.12,0.98), goldHi);
+    capUnder.position.y = 5.70; grp.add(capUnder);
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(0.86,0.26,0.86), goldM);
+    cap.position.y = 5.88; grp.add(cap);
+    grp.position.set(x, 0, -1.35); scene.add(grp);
+  });
+
+  // ---- 顶部鎏金匾额 ----
+  const lintel = new THREE.Mesh(new THREE.BoxGeometry(7.15,0.62,0.64), goldM);
+  lintel.position.set(0, 6.28, -1.35); scene.add(lintel);
+  const lintelTop = new THREE.Mesh(new THREE.BoxGeometry(7.45,0.14,0.80), goldHi);
+  lintelTop.position.set(0, 6.64, -1.35); scene.add(lintelTop);
+  const bc = document.createElement('canvas'); bc.width = 1024; bc.height = 128;
+  const bg = bc.getContext('2d');
+  bg.fillStyle = '#1a0c04'; bg.fillRect(0,0,1024,128);
+  bg.strokeStyle = '#e6b454'; bg.lineWidth = 6; bg.strokeRect(6,6,1012,116);
+  bg.fillStyle = '#ffd76a'; bg.font = 'bold 62px "Microsoft YaHei",sans-serif';
+  bg.textAlign = 'center'; bg.textBaseline = 'middle';
+  bg.fillText('龙 头 铡 · 虎 头 铡', 512, 62);
+  const plaque = new THREE.Mesh(new THREE.PlaneGeometry(6.6, 0.46),
+    new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(bc), transparent:true}));
+  plaque.position.set(0, 6.28, -1.02); scene.add(plaque);
+  [-2.95, 2.95].forEach(x=>{
+    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.13,12,10), glowM);
+    lamp.position.set(x, 6.28, -0.99); scene.add(lamp);
+  });
+
+  // ---- 中央鎏金龙首（匾额正上方，龙口朝前） ----
+  const dragon = buildDragonHead();
+  dragon.position.set(0, 7.42, -1.35); dragon.scale.setScalar(1.15); scene.add(dragon);
+
+  // ---- 台座前沿双虎首 ----
+  [[-2.33,0.62],[2.33,-0.62]].forEach(([x,ry])=>{
+    const t = buildTigerHead();
+    t.position.set(x, 0.72, 2.33); t.rotation.y = ry; t.scale.setScalar(1.3); scene.add(t);
+  });
+
+  // ---- 匾额两端悬挂宫灯 ----
+  [[-3.0],[3.0]].forEach(([x])=>{
+    const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,0.5,6), goldM);
+    rope.position.set(x, 5.75, -1.35); scene.add(rope);
+    const lantern = new THREE.Mesh(new THREE.SphereGeometry(0.26,14,12), glowM);
+    lantern.position.set(x, 5.45, -1.35); scene.add(lantern);
+    const lRing = new THREE.Mesh(new THREE.TorusGeometry(0.32,0.035,8,24), goldHi);
+    lRing.rotation.x = Math.PI/2; lRing.position.set(x, 5.45, -1.35); scene.add(lRing);
+  });
+
+  // ---- 铡刀龙门（横梁固定在双柱之间，刀体+喷头沿 Z 滑动） ----
+  const beamGrp = new THREE.Group();
+  const beam = new THREE.Mesh(new THREE.BoxGeometry(6.3,0.28,0.30), darkGold);
+  beam.position.y = 3.24; beamGrp.add(beam);
+  const beamCap = new THREE.Mesh(new THREE.BoxGeometry(6.45,0.08,0.36), goldHi);
+  beamCap.position.y = 3.40; beamGrp.add(beamCap);
+  const strip = new THREE.Mesh(new THREE.BoxGeometry(6.2,0.05,0.10), glowM);
+  strip.position.y = 3.10; beamGrp.add(strip);
+  window._beamStrip = strip;
+  [-2.75,2.75].forEach(x=>{
+    const s = new THREE.Mesh(new THREE.BoxGeometry(0.40,0.40,0.36), goldM);
+    s.position.set(x, 3.24, 0); beamGrp.add(s);
+  });
+  beamGrp.position.z = -1.35; scene.add(beamGrp);
+
+  gantryZ = new THREE.Group();
+
+  // 大刀（银钢铡刀，悬于横梁之上，刃口冷光）
+  const shape = new THREE.Shape();
+  const BW = 1.05;
+  shape.moveTo(-BW, 1.14);
+  shape.lineTo(BW, 1.14);
+  shape.lineTo(BW, 0.10);
+  shape.lineTo(0, -0.46);
+  shape.lineTo(-BW, 0.10);
+  shape.closePath();
+  const blade = new THREE.Mesh(new THREE.ExtrudeGeometry(shape,
+    {depth:0.07, bevelEnabled:true, bevelSize:0.02, bevelThickness:0.02, bevelSegments:2}),
+    new THREE.MeshStandardMaterial({color:0xc9d6e6, metalness:1, roughness:.12}));
+  blade.position.set(0, 4.22, -0.06); gantryZ.add(blade);
+  window._blade = blade;
+  [-0.55,0.55].forEach(x=>{
+    const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.022,0.022,0.52,6), goldM);
+    rope.position.set(x, 3.72, -0.06); gantryZ.add(rope);
+  });
+  for(let i=0;i<4;i++){
+    const rv = new THREE.Mesh(new THREE.SphereGeometry(0.035,8,6), darkGold);
+    rv.position.set(-0.5+i*0.33, 3.10, -0.31); gantryZ.add(rv);
+  }
+
+  // 喷头总成（金爪龙头喷头 + 风扇 + 热端 + 发光丝）
+  nozzle = new THREE.Group();
+  const carriage = new THREE.Mesh(new THREE.BoxGeometry(0.56,0.30,0.46), darkGold);
+  carriage.position.y = 0.02; nozzle.add(carriage);
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.42,0.40,0.34), lacquer);
+  body.position.y = -0.34; nozzle.add(body);
+  const band = new THREE.Mesh(new THREE.TorusGeometry(0.20,0.035,8,24), goldHi);
+  band.rotation.x = Math.PI/2; band.position.y = -0.16; nozzle.add(band);
+  for(let i=0;i<4;i++){
+    const a = i/4*Math.PI*2 + Math.PI/4;
+    const claw = new THREE.Mesh(new THREE.ConeGeometry(0.05,0.22,6), goldM);
+    claw.position.set(Math.cos(a)*0.16, -0.58, Math.sin(a)*0.16);
+    claw.rotation.set(Math.sin(a)*0.5, 0, -Math.cos(a)*0.5); nozzle.add(claw);
+  }
+  const heatsink = new THREE.Mesh(new THREE.CylinderGeometry(0.10,0.10,0.30,12),
+    new THREE.MeshStandardMaterial({color:0xc9a227, metalness:1, roughness:.3}));
+  heatsink.position.y = -0.60; nozzle.add(heatsink);
+  const tip = new THREE.Mesh(new THREE.ConeGeometry(0.085,0.20,12),
+    new THREE.MeshStandardMaterial({color:0x2a2f3a, metalness:.95, roughness:.2}));
+  tip.rotation.x = Math.PI; tip.position.y = -0.78; nozzle.add(tip);
+  glowTip = new THREE.Mesh(new THREE.SphereGeometry(0.06,12,12),
+    new THREE.MeshBasicMaterial({color:0xff6655}));
+  glowTip.position.y = -0.88; nozzle.add(glowTip);
+  // 风扇
+  const fanC = new THREE.Group();
+  const fanRing = new THREE.Mesh(new THREE.TorusGeometry(0.15,0.03,8,20), goldHi);
+  fanRing.rotation.x = Math.PI/2; fanC.add(fanRing);
+  const blades = new THREE.Group();
+  for(let i=0;i<4;i++){
+    const b = new THREE.Mesh(new THREE.BoxGeometry(0.26,0.02,0.06),
+      new THREE.MeshStandardMaterial({color:0xe8c97a, metalness:.7, roughness:.35}));
+    b.rotation.y = i/4*Math.PI*2; blades.add(b);
+  }
+  fanC.add(blades); fanC.position.y = -0.10; fanC.position.z = 0.24;
+  nozzle.add(fanC);
+  window._fan = blades;
+  // 双色线材（装饰）
+  for(let i=0;i<2;i++){
+    const wire = new THREE.Mesh(new THREE.CylinderGeometry(0.018,0.018,0.9,6),
+      new THREE.MeshBasicMaterial({color: i?0xffc451:0xf87171}));
+    wire.position.set(-0.14+0.28*i, -0.38, 0.16); nozzle.add(wire);
+  }
+  nozzle.position.set(0, 3.2, 0);
+  gantryZ.add(nozzle);
+  gantryZ.position.z = -1.35;
+  scene.add(gantryZ);
+
+  // 控制屏（鎏金边框）
+  const sc = document.createElement('canvas'); sc.width = 256; sc.height = 128;
+  const sg = sc.getContext('2d');
+  sg.fillStyle = '#140a03'; sg.fillRect(0,0,256,128);
+  sg.strokeStyle = '#e6b454'; sg.lineWidth = 3; sg.strokeRect(6,6,244,116);
+  sg.fillStyle = '#ffd76a'; sg.font = 'bold 30px "Microsoft YaHei",sans-serif'; sg.textAlign='center';
+  sg.fillText('READY', 128, 52);
+  sg.fillStyle = '#c9ab7e'; sg.font = '18px "Microsoft YaHei",sans-serif';
+  sg.fillText('NOZZLE 210°C / BED 60°C', 128, 88);
+  const screen = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.75),
+    new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(sc)}));
+  screen.position.set(-2.85, 2.15, 2.15); screen.rotation.y = 0.55; scene.add(screen);
+  window._screen = screen;
+}
+
+/* 料盘（挂机 + 缓慢旋转） */
+function buildSpool(){
+  const sp = new THREE.Group();
+  const spool = new THREE.Mesh(new THREE.CylinderGeometry(0.52,0.52,0.24,28),
+    new THREE.MeshStandardMaterial({color:0xffc451, metalness:.35, roughness:.5, transparent:true, opacity:.8, emissive:0x5a3400, emissiveIntensity:.4}));
+  spool.rotation.z = Math.PI/2; sp.add(spool);
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.16,0.36,20),
+    new THREE.MeshStandardMaterial({color:0xf3be50, metalness:1, roughness:.18}));
+  hub.rotation.z = Math.PI/2; sp.add(hub);
+  for(let i=0;i<3;i++){
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.05,0.9,0.05),
+      new THREE.MeshStandardMaterial({color:0x7a5315, metalness:.8, roughness:.3}));
+    arm.position.y = 0; arm.rotation.x = i/3*Math.PI*2; sp.add(arm);
+  }
+  sp.position.set(-3.62, 1.95, -0.85);
+  scene.add(sp);
+  window._spool = sp;
+}
+
+/* 悬浮金屑 */
+function buildParticles(){
+  const N = 160, pos = new Float32Array(N*3);
+  for(let i=0;i<N;i++){
+    const r = 4 + Math.random()*10, a = Math.random()*Math.PI*2;
+    pos[i*3] = Math.cos(a)*r;
+    pos[i*3+1] = Math.random()*7;
+    pos[i*3+2] = Math.sin(a)*r;
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const p = new THREE.Points(g, new THREE.PointsMaterial({
+    color:0xffcf6b, size:0.06, transparent:true, opacity:.65, depthWrite:false}));
+  scene.add(p);
+  window._dust = p;
+}
+
+/* =====================================================
+   ③ 精简轨道控制器（内联，免CDN依赖，支持触屏）
+===================================================== */
+function MiniOrbit(cam, dom, target){
+  const self = this;
+  let off = cam.position.clone().sub(target);
+  let sph = new THREE.Spherical().setFromVector3(off);
+  let cur = {t:sph.theta, p:sph.phi, r:sph.radius};
+  let tgt = {t:sph.theta, p:sph.phi, r:sph.radius};
+  let ctr = target.clone(), ctrT = target.clone();
+  const clampP = v => Math.max(0.12, Math.min(1.45, v));
+  const clampR = v => Math.max(4, Math.min(19, v));
+  let drag = false, lx=0, ly=0, pan=false;
+  let touches = {}, pinchD = 0;
+
+  dom.addEventListener('contextmenu', e=>e.preventDefault());
+  dom.addEventListener('mousedown', e=>{ drag=true; pan=(e.button===2||e.button===1); lx=e.clientX; ly=e.clientY; });
+  window.addEventListener('mousemove', e=>{
+    if(!drag) return;
+    const dx=e.clientX-lx, dy=e.clientY-ly; lx=e.clientX; ly=e.clientY;
+    if(pan){ panBy(dx,dy); } else { tgt.t -= dx*0.0052; tgt.p = clampP(tgt.p - dy*0.0042); }
+  });
+  window.addEventListener('mouseup', ()=>{ drag=false; pan=false; });
+  dom.addEventListener('wheel', e=>{
+    e.preventDefault();
+    tgt.r = clampR(tgt.r * (1 + Math.sign(e.deltaY)*0.09));
+  }, {passive:false});
+  // 触屏：单指旋转 / 双指缩放+平移
+  dom.addEventListener('touchstart', e=>{
+    if(e.touches.length===1){ drag=true; lx=e.touches[0].clientX; ly=e.touches[0].clientY; }
+    else if(e.touches.length===2){
+      drag=false;
+      pinchD = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+      const cx=(e.touches[0].clientX+e.touches[1].clientX)/2, cy=(e.touches[0].clientY+e.touches[1].clientY)/2;
+      touches={x:cx,y:cy};
+    }
+  }, {passive:true});
+  dom.addEventListener('touchmove', e=>{
+    e.preventDefault();
+    if(e.touches.length===1 && drag){
+      const dx=e.touches[0].clientX-lx, dy=e.touches[0].clientY-ly; lx=e.touches[0].clientX; ly=e.touches[0].clientY;
+      tgt.t -= dx*0.006; tgt.p = clampP(tgt.p - dy*0.005);
+    } else if(e.touches.length===2){
+      const d = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+      tgt.r = clampR(tgt.r * pinchD/d); pinchD = d;
+      const cx=(e.touches[0].clientX+e.touches[1].clientX)/2, cy=(e.touches[0].clientY+e.touches[1].clientY)/2;
+      panBy(cx-touches.x, cy-touches.y); touches={x:cx,y:cy};
+    }
+  }, {passive:false});
+  dom.addEventListener('touchend', ()=>{ drag=false; });
+  function panBy(dx,dy){
+    const right = new THREE.Vector3().setFromMatrixColumn(cam.matrix,0);
+    const up = new THREE.Vector3().setFromMatrixColumn(cam.matrix,1);
+    ctrT.addScaledVector(right, -dx*tgt.r*0.0011);
+    ctrT.addScaledVector(up, dy*tgt.r*0.0011);
+  }
+  this.update = function(){
+    cur.t += (tgt.t-cur.t)*0.12; cur.p += (tgt.p-cur.p)*0.12; cur.r += (tgt.r-cur.r)*0.12;
+    ctr.lerp(ctrT, 0.14);
+    cam.position.setFromSpherical(new THREE.Spherical(cur.r, cur.p, cur.t)).add(ctr);
+    cam.lookAt(ctr);
+  };
+  this.reset = ()=>{ tgt={t:sph.theta,p:sph.phi,r:sph.radius}; ctrT=target.clone(); };
+}
+
+/* =====================================================
+   ④ 头像加载（三级降级链，永不失败）
+===================================================== */
+function genAvatarCanvas(name){
+  // 程序内生成"昵称首字"立体感头像（零网络依赖，明暗起伏足够做浮雕）
+  const S = 256;
+  const c = document.createElement('canvas'); c.width = c.height = S;
+  const g = c.getContext('2d');
+  let h = 0; for(const ch of String(name)) h = (h*31 + ch.charCodeAt(0)) % 360;
+  // 底：对角渐变
+  const grad = g.createLinearGradient(0,0,S,S);
+  grad.addColorStop(0, `hsl(${h},75%,52%)`);
+  grad.addColorStop(.55, `hsl(${(h+40)%360},70%,42%)`);
+  grad.addColorStop(1, `hsl(${(h+80)%360},80%,28%)`);
+  g.fillStyle = grad; g.fillRect(0,0,S,S);
+  // 中心径向高光（浮雕会明显凸起）
+  const rg = g.createRadialGradient(S*0.45,S*0.38,4, S*0.45,S*0.38,S*0.62);
+  rg.addColorStop(0,'rgba(255,255,255,.75)');
+  rg.addColorStop(.45,'rgba(255,255,255,.18)');
+  rg.addColorStop(1,'rgba(0,0,0,.45)');
+  g.fillStyle = rg; g.fillRect(0,0,S,S);
+  // 圆形装饰环
+  g.strokeStyle = 'rgba(255,255,255,.28)'; g.lineWidth = 6;
+  g.beginPath(); g.arc(S/2, S/2, S*0.38, 0, Math.PI*2); g.stroke();
+  // 首字（带深色描边，凸起更明显）
+  const ch0 = String(name).trim().charAt(0).toUpperCase() || '?';
+  g.font = 'bold 116px "PingFang SC","Microsoft YaHei",sans-serif';
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.lineWidth = 8; g.strokeStyle = 'rgba(0,0,0,.35)';
+  g.strokeText(ch0, S/2, S/2 + 6);
+  g.fillStyle = 'rgba(255,255,255,.96)';
+  g.fillText(ch0, S/2, S/2 + 6);
+  return c;
+}
+function imgToCanvas(img){
+  const c = document.createElement('canvas'); c.width=c.height=128;
+  c.getContext('2d').drawImage(img, 0,0,128,128);
+  return c;
+}
+function loadAvatar(url, name){
+  // 返回 Promise<canvas>：带超时兜底，2秒内取不到就换方案，绝不卡住打印队列
+  return new Promise(res=>{
+    let done = false;
+    const finish = cv=>{ if(!done){ done = true; res(cv); } };
+    const fallback = ()=>finish(genAvatarCanvas(name));
+    if(!url){ fallback(); return; }
+    const attempt = (src, cors, ms, onFail)=>{
+      const img = new Image();
+      if(cors) img.crossOrigin = 'anonymous';
+      const timer = setTimeout(()=>{ img.onload = img.onerror = null; onFail(); }, ms);
+      img.onload = ()=>{
+        clearTimeout(timer);
+        try{ finish(imgToCanvas(img)); }catch(e){ fallback(); }
+      };
+      img.onerror = ()=>{ clearTimeout(timer); onFail(); };
+      img.src = src;
+    };
+    // 一级：直连头像 | 二级：weserv 代理 | 三级：本地生成首字头像
+    attempt(url, true, 2200, ()=>{
+      attempt('https://images.weserv.nl/?url=' +
+        encodeURIComponent(url.replace(/^https?:\/\//,'')) + '&w=128&h=128&fit=cover',
+        true, 2600, fallback);
+    });
+  });
+}
+
+/* =====================================================
+   ⑤ 浮雕生成（V3.1：修复头像被底座遮挡 + 像素采样错位）
+===================================================== */
+const SEG = 44, TEX = 96, EMB_W = 1.32, EMB_H0 = 0.20, EMB_DEPTH = 0.22;
+/* 统一把任意尺寸画布重采样到 TEX×TEX 再取像素（旧版直接读64×64造成只取左上角） */
+function samplePixels(canvas){
+  const tmp = document.createElement('canvas'); tmp.width = tmp.height = TEX;
+  const tg = tmp.getContext('2d');
+  tg.drawImage(canvas, 0,0,TEX,TEX);
+  return tg.getImageData(0,0,TEX,TEX).data;
+}
+/* 底座正面昵称铭牌 */
+function makeNamePlate(name, kind){
+  const c = document.createElement('canvas'); c.width = 512; c.height = 128;
+  const g = c.getContext('2d');
+  g.fillStyle = kind==='gift' ? 'rgba(60,44,10,.95)' : 'rgba(12,20,38,.95)';
+  g.fillRect(0,0,512,128);
+  g.strokeStyle = kind==='gift' ? 'rgba(251,191,36,.9)' : 'rgba(34,211,238,.75)';
+  g.lineWidth = 4; g.strokeRect(5,5,502,118);
+  g.fillStyle = kind==='gift' ? '#fbbf24' : '#22d3ee';
+  g.font = 'bold 50px "Microsoft YaHei",sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  let txt = String(name);
+  if(txt.length > 7) txt = txt.slice(0,7) + '…';
+  g.fillText(txt, 256, 66);
+  return c;
+}
+function buildEmboss(canvas, kind, name){
+  const data = samplePixels(canvas);
+  const geo = new THREE.PlaneGeometry(EMB_W, EMB_W, SEG, SEG);
+  const pos = geo.attributes.position;
+  for(let iy=0; iy<=SEG; iy++){
+    for(let ix=0; ix<=SEG; ix++){
+      const i = iy*(SEG+1) + ix;
+      const px = Math.min(TEX-1, Math.round(ix/SEG*(TEX-1)));
+      const py = Math.min(TEX-1, Math.round(iy/SEG*(TEX-1)));
+      const idx = (py*TEX + px)*4;
+      const gray = (data[idx]+data[idx+1]+data[idx+2])/3;
+      const alpha = data[idx+3]/255;
+      pos.setZ(i, gray/255 * EMB_DEPTH * (alpha>0.05?1:0));  // 灰度 → 高度
+    }
+  }
+  geo.computeVertexNormals();
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.anisotropy = 4;
+  const face = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
+    map:tex, roughness:.55, metalness:.18, side:THREE.DoubleSide}));
+  // ★ 头像面贴在底座"上表面"（旧版把面放在了底座下方，结果被底座完全遮住）
+  face.position.z = EMB_H0;
+
+  // 底座（在头像面下方）
+  const baseMat = kind==='gift'
+    ? new THREE.MeshStandardMaterial({color:0x2a2110, metalness:.95, roughness:.22,
+        emissive:0x3a2a08, emissiveIntensity:1})
+    : new THREE.MeshStandardMaterial({color:0x1a2436, metalness:.85, roughness:.25});
+  const base = new THREE.Mesh(new THREE.BoxGeometry(EMB_W+0.16, EMB_W+0.16, EMB_H0), baseMat);
+  base.position.z = EMB_H0/2;   // 从 0 到 EMB_H0
+
+  // 金色描边（四个细条，提升质感）
+  const edgeM = new THREE.MeshStandardMaterial({
+    color: kind==='gift'?0xfbbf24:0x4ea8d6, metalness:1, roughness:.3,
+    emissive: kind==='gift'?0x4a3200:0x0a2438});
+  const eW = EMB_W+0.18, eT = 0.05;
+  [[0, eW/2],[0,-eW/2],[eW/2,0],[-eW/2,0]].forEach(([x,y],i)=>{
+    const g2 = new THREE.BoxGeometry(i<2?eW:eT, i<2?eT:eW, eT);
+    const bar = new THREE.Mesh(g2, edgeM);
+    bar.position.set(x, y, EMB_H0);
+    base.add(bar);
+  });
+
+  // 昵称铭牌（立在底座前沿，朝向观众）
+  const plateTex = new THREE.CanvasTexture(makeNamePlate(name, kind));
+  const plate = new THREE.Mesh(new THREE.PlaneGeometry(EMB_W*0.82, EMB_W*0.2),
+    new THREE.MeshBasicMaterial({map:plateTex, transparent:true}));
+  plate.rotation.x = Math.PI/2;
+  plate.position.set(0, -(EMB_W/2 + 0.10), EMB_H0*0.55);
+
+  const grp = new THREE.Group();
+  grp.add(base); grp.add(face); grp.add(plate);
+  grp.rotation.x = -Math.PI/2;   // 平躺：局部+Z → 世界+Y（面朝上）
+  return grp;
+}
+
+/* =====================================================
+   ⑥ 槽位系统（同心圆摆放，中心1 + 第一环6 + 第二环12 = 19 位）
+===================================================== */
+function slotPos(i){
+  if(i===0) return [0,0];
+  if(i<=6){
+    const ang = ((i-1)/6)*Math.PI*2 + 0.5;
+    return [Math.cos(ang)*1.38, Math.sin(ang)*1.38];
+  }
+  const rem = i-7, ang = (rem/12)*Math.PI*2 + 0.26;
+  return [Math.cos(ang)*2.50, Math.sin(ang)*2.50];
+}
+
+/* =====================================================
+   ⑦ 打印任务核心流程
+===================================================== */
+async function addPrintTask(url, name, kind='danmaku', fromHistory=false){
+  if(printQueue.length + (currentTask?1:0) >= 40){ toast('⚠️ 队列已满（40），请稍候', 'warn'); return; }
+  let canvas;
+  try{ canvas = await loadAvatar(url, name); }
+  catch(e){ canvas = genAvatarCanvas(name); }
+  const grp = buildEmboss(canvas, kind, name);
+  grp.visible = false;
+  grp.position.set(0, BED_Y + 0.012, 0);
+  scene.add(grp);   // ★ 必须加入场景，否则成品永远不可见
+  grp.userData = { name, kind, layer:0, done:false, baseY:BED_Y + 0.012, canvas, url:url||'', time:Date.now() };
+  const prio = (kind==='gift' && CFG.giftFirst);
+  if(prio) printQueue.unshift(grp); else printQueue.push(grp);
+  if(prio && printQueue.length > 1) toast('🎁 礼物任务已插队：' + escapeHtml(name), 'ok');
+  updateUI(); renderQueue();
+  addHistory({name, kind, url:url||'', time:Date.now()});
+}
+function addTestTask(){
+  resumeAudio();
+  const n = '测试用户' + String(Date.now()%1000).padStart(4,'0');
+  addPrintTask('https://picsum.photos/seed/' + Date.now() + '/128/128', n, 'danmaku');
+  toast('🖼️ 已加入测试头像任务');
+}
+
+/* 打印推进（每帧） */
+function stepPrint(){
+  if(!currentTask && printQueue.length){
+    currentTask = printQueue.shift();
+    currentTask.visible = true;
+    progress = 0;
+    currentTask.userData.layer = 0;
+    playStartSound();
+    updateUI(); renderQueue();
+  }
+  if(!currentTask || currentTask.userData.done) { idleGantry(); return; }
+
+  const u = currentTask.userData;
+  progress += 0.0060 * CFG.speed * (u.kind==='gift'?1.35:1);
+  const maxL = CFG.layer;
+  const layer = Math.min(Math.floor(progress*maxL), maxL);
+  if(layer !== u.layer){ u.layer = layer; }
+
+  // 平躺浮雕沿世界Y逐层长高 = 组的局部 scale.z（V2的 scale.y 方向bug已修）
+  currentTask.scale.z = Math.max(0.02, 0.15 + 0.85*(layer/maxL));
+
+  // 喷头逐行扫描（龙门架结构动画）
+  const rows = 6, t = progress*maxL*rows;
+  const rowIdx = Math.floor(t) % rows;
+  const frac = t % 1;
+  const sweep = (rowIdx%2===0) ? frac : 1-frac;
+  const lx = (sweep - 0.5) * EMB_W;
+  const lz = ((rowIdx + 0.5)/rows - 0.5) * EMB_W;
+  nozzle.position.x = lx;
+  nozzle.position.y = 3.2;                 // 喷头挂在横梁，横梁整体下降
+  const drop = 1.62 * Math.min(1, progress*1.8);
+  gantryZ.position.y = -drop;               // Z轴逐层下降，喷嘴贴近工件
+  // 铡刀从后柱滑向工件中心，到位后随扫描行微动
+  const gz = THREE.MathUtils.lerp(-1.35, 0, Math.min(1, progress*1.15));
+  gantryZ.position.z = gz + lz*0.35*Math.min(1, progress*1.15);
+  glowTip.material.color.setHex(u.kind==='gift' ? 0xffcc44 : 0xff6655);
+  glowTip.scale.setScalar(0.8 + 0.35*Math.sin(Date.now()*0.02));
+
+  // 打印区高亮呼吸
+  window._zone.material.opacity = 0.07 + 0.05*Math.sin(Date.now()*0.006);
+
+  if(layer >= maxL && progress >= 1){
+    finishPrint(currentTask);
+    currentTask = null;
+    updateUI(); renderQueue();
+  }
+}
+function idleGantry(){
+  // 空闲时喷头缓慢回位（含Z轴抬升）
+  nozzle.position.x += (0 - nozzle.position.x)*0.05;
+  nozzle.position.y += (3.2 - nozzle.position.y)*0.05;
+  gantryZ.position.y += (0 - gantryZ.position.y)*0.05;
+  gantryZ.position.z += (-1.35 - gantryZ.position.z)*0.05;
+  glowTip.scale.setScalar(0.85);
+}
+function finishPrint(task){
+  task.userData.done = true;
+  task.scale.z = 1;
+  // 台面满员：开启自动回收时移除最早成品（其槽位为圆心，新成品补位）
+  if(printedItems.length >= MAX_SLOTS){
+    if(CFG.recycle){
+      const oldest = printedItems.shift();
+      releaseLabel(oldest); scene.remove(oldest);
+      toast('♻️ 台面已满，自动回收最早成品', 'warn');
+    }
+    // 未开启回收时槽位取模循环覆盖，由用户自行清理
+  }
+  const slotIdx = printedItems.length % MAX_SLOTS;
+  printedItems.push(task);
+  const [sx, sz] = slotPos(slotIdx);
+  addTween(420, k=>{ task.position.x = sx*k; task.position.z = sz*k; });
+  createLabel(task.userData.name, task, task.userData.kind);
+  playFinishSound();
+  updateBedInfo();
+  // 中心光柱庆祝
+  flashCelebrate(task.userData.kind==='gift');
+}
+
+/* 简易tween */
+function addTween(dur, fn){
+  tweens.push({t0:performance.now(), dur, fn});
+}
+function stepTweens(){
+  const now = performance.now();
+  tweens = tweens.filter(tw=>{
+    const k = Math.min(1, (now-tw.t0)/tw.dur);
+    tw.fn(k<0.5 ? 2*k*k : 1-Math.pow(-2*k+2,2)/2); // easeInOut
+    return k < 1;
+  });
+}
+
+/* 庆祝光柱 */
+function flashCelebrate(gold){
+  const geo = new THREE.CylinderGeometry(0.5, 0.8, 5, 16, 1, true);
+  const mat = new THREE.MeshBasicMaterial({
+    color: gold?0xfbbf24:0x22d3ee, transparent:true, opacity:0.25, side:THREE.DoubleSide, depthWrite:false});
+  const beam = new THREE.Mesh(geo, mat);
+  beam.position.y = 2.6; scene.add(beam);
+  addTween(700, k=>{ mat.opacity = 0.25*(1-k); beam.scale.set(1+k*1.4, 1, 1+k*1.4); });
+  setTimeout(()=>{ scene.remove(beam); geo.dispose(); mat.dispose(); }, 760);
+}
+
+/* =====================================================
+   ⑧ 2D 标签（昵称悬浮）
+===================================================== */
+function createLabel(text, mesh, kind){
+  const div = document.createElement('div');
+  div.className = 'labelDiv';
+  div.innerHTML = (kind==='gift'?'🎁 ':'') + escapeHtml(text);
+  div.style.cssText = 'position:fixed;pointer-events:none;z-index:8;color:#fff;font-size:12px;padding:2px 8px;border-radius:8px;background:rgba(20,12,5,.75);border:1px solid rgba(255,200,90,.35);text-shadow:0 0 6px #000;white-space:nowrap';
+  document.body.appendChild(div);
+  labelPool.push({div, mesh});
+}
+function updateLabels(){
+  const v = new THREE.Vector3();
+  labelPool.forEach(it=>{
+    if(!it.mesh.parent){ it.div.style.display='none'; return; }
+    v.copy(it.mesh.position); v.y += 0.55;
+    v.project(camera);
+    if(v.z < 1 && Math.abs(v.x)<1.1 && Math.abs(v.y)<1.1){
+      it.div.style.display='block';
+      it.div.style.left = ((v.x+1)/2*innerWidth) + 'px';
+      it.div.style.top  = ((-v.y+1)/2*innerHeight) + 'px';
+    } else it.div.style.display='none';
+  });
+}
+function releaseLabel(mesh){
+  const i = labelPool.findIndex(l=>l.mesh===mesh);
+  if(i>=0){ labelPool[i].div.remove(); labelPool.splice(i,1); }
+}
+function escapeHtml(s){ return String(s).replace(/[<>&"]/g, c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
+
+/* =====================================================
+   ⑨ 音效（WebAudio 合成，零素材；V3.1 修复不响的问题）
+===================================================== */
+let audioCtx = null;
+function unlockAudio(){
+  try{
+    if(!audioCtx){
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if(!AC) return null;
+      audioCtx = new AC();
+      // 播放 1 帧静音缓冲，强制解锁自动播放限制
+      const buf = audioCtx.createBuffer(1, 1, 44100);
+      const src = audioCtx.createBufferSource();
+      src.buffer = buf; src.connect(audioCtx.destination); src.start(0);
+    }
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  }catch(e){ return null; }
+}
+function resumeAudio(){ unlockAudio(); }
+function tone(freq, dur=0.12, vol=0.3, delay=0, type='triangle'){
+  if(!CFG.sound) return;
+  const ctx = unlockAudio();
+  if(!ctx) return;
+  try{
+    const t = ctx.currentTime + delay;
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(vol, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(t); o.stop(t + dur + 0.04);
+  }catch(e){}
+}
+/* 机械咔哒声（打印起步） */
+function clickNoise(vol=0.12){
+  if(!CFG.sound) return;
+  const ctx = unlockAudio(); if(!ctx) return;
+  try{
+    const len = Math.floor(ctx.sampleRate * 0.05);
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for(let i=0;i<len;i++) d[i] = (Math.random()*2-1) * (1 - i/len);
+    const s = ctx.createBufferSource(); s.buffer = buf;
+    const g = ctx.createGain(); g.gain.value = vol;
+    s.connect(g); g.connect(ctx.destination); s.start();
+  }catch(e){}
+}
+function beep(freq, dur=0.1, vol=0.2, delay=0){ tone(freq, dur, vol, delay, 'triangle'); }
+function playStartSound(){
+  clickNoise(0.1);
+  tone(392, 0.18, 0.22, 0, 'sine');
+  tone(523, 0.22, 0.18, 0.08, 'sine');
+}
+function playFinishSound(){
+  if(!CFG.sound) return;
+  // 三音上行和弦 + 高频铃声，比旧版更明显
+  tone(784, 0.18, 0.30, 0, 'triangle');
+  tone(988, 0.18, 0.28, 0.10, 'triangle');
+  tone(1319, 0.26, 0.26, 0.20, 'triangle');
+  tone(1568, 0.34, 0.22, 0.30, 'sine');
+  tone(2093, 0.20, 0.12, 0.42, 'sine');
+}
+function testSound(){
+  unlockAudio();
+  if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  if(!CFG.sound){ toast('🔇 音效已关闭，请先打开「打印完成提示音」开关', 'warn'); return; }
+  setTimeout(()=>{ playFinishSound(); toast('🔊 已播放试听音效', 'ok'); }, 120);
+}
+
+/* =====================================================
+   ⑩ 弹幕接入（WS + 通用适配器 + 模拟器）
+===================================================== */
+function toggleWs(){
+  resumeAudio();
+  if(wsOn){ wsOn=false; if(ws){ try{ws.close();}catch(e){} } ws=null; clearTimeout(wsRetryTimer); setWsUI(); toast('📡 弹幕WS已关闭'); return; }
+  if(isMobile){ toast('📱 WS弹幕需连接电脑本地弹幕服务，请到电脑端使用本功能', 'warn'); return; }  // 规则13
+  wsOn = true; setWsUI(); connectWs();
+}
+function connectWs(){
+  if(!wsOn) return;
+  try{ ws = new WebSocket(CFG.wsUrl); }
+  catch(e){ setWsUI('retry'); return retryWs(); }
+  ws.onopen = ()=>{ setWsUI(); toast('🟢 弹幕WS已连接：' + CFG.wsUrl, 'ok'); addDm('系统', '弹幕服务已连接', 'e'); };
+  ws.onmessage = e=>{
+    let raw; try{ raw = JSON.parse(e.data); }catch(err){ return; }
+    handleIncoming(raw);
+  };
+  ws.onclose = ()=>{ if(wsOn){ setWsUI('retry'); retryWs(); } };
+  ws.onerror = ()=>{ setWsUI('retry'); };
+}
+function retryWs(){
+  clearTimeout(wsRetryTimer);
+  wsRetryTimer = setTimeout(connectWs, 3000);
+}
+function setWsUI(state){
+  const dot = document.getElementById('wsDot'), btn = document.getElementById('wsBtn');
+  dot.className = state==='retry' ? 'retry' : (wsOn ? 'on' : '');
+  btn.classList.toggle('on', wsOn && state!=='retry');
+}
+/* 通用弹幕格式适配器：兼容 BLIVE Message Jar / blivechat / 弹幕姬 等常见字段 */
+function handleIncoming(raw){
+  let m = raw;
+  if(m && typeof m.data==='object' && m.data) m = Object.assign({}, m, m.data);
+  const type = String(m.type || m.cmd || '').toLowerCase();
+  const name = m.nickname || m.userName || m.username || m.uname || m.name || (m.user&&(m.user.nickname||m.user.name)) || '观众';
+  const avatar = m.avatar || m.userFace || m.userAvatar || m.face || (m.user&&(m.user.face||m.user.avatar)) || '';
+  let kind = null;
+  if(/comment|danmu|danmaku|chat/.test(type)) kind='danmaku';
+  else if(/gift/.test(type)) kind='gift';
+  else if(/enter|welcome|interact/.test(type)) kind='enter';
+  else if(/follow/.test(type)) kind='follow';
+  else if(m.giftName || m.gift_name || m.giftId) kind='gift';
+  else if(m.content || m.text || m.msg || m.comment) kind='danmaku';
+  if(!kind) return;
+  const text = m.content || m.text || m.msg || m.comment || m.giftName || m.gift_name || '';
+  pushStat(kind);
+  addDm(name, text, kind);
+  if(!canAccept(kind)) return;
+  addPrintTask(avatar, name, kind);
+}
+function canAccept(kind){
+  return (kind==='danmaku'&&CFG.dm) || (kind==='gift'&&CFG.gift) ||
+         (kind==='enter'&&CFG.enter) || (kind==='follow'&&CFG.follow);
+}
+/* 模拟弹幕（走同一处理链路 = 自测） */
+const MOCK_NAMES = ['热血阿伟','奶茶三分甜','峡谷小钢炮','熬夜冠军','干饭人小张','半糖去冰','代码搬运工','星河入梦','摸鱼大师','柠檬精本精','碳水快乐机','早八幸存者'];
+const MOCK_TEXTS = ['主播666','这个打印太酷了','哈哈哈哈','前排围观','来了来了','送个小心心','打卡','效果不错嘛','蹲一个我的头像','好耶！'];
+function mockDanmaku(){
+  resumeAudio();
+  const r = Math.random();
+  const kind = r<0.72?'danmaku' : r<0.88?'gift' : r<0.96?'enter':'follow';
+  const name = MOCK_NAMES[Math.floor(Math.random()*MOCK_NAMES.length)];
+  const text = kind==='danmaku' ? MOCK_TEXTS[Math.floor(Math.random()*MOCK_TEXTS.length)] : (kind==='gift'?'小心心×1':'进入直播间');
+  // 模拟数据走程序内生成头像，离线也能完整演示（不依赖外网）
+  handleIncoming({type: kind, nickname:name, avatar:'', content:text});
+}
+
+/* =====================================================
+   ⑪ UI：队列 / 统计 / 弹幕流 / 历史 / 设置
+===================================================== */
+const KIND_TXT = {danmaku:'弹幕', gift:'礼物', enter:'进入', follow:'关注'};
+const KIND_CLS = {danmaku:'d', gift:'g', enter:'e', follow:'f'};
+const KIND_ICO = {danmaku:'💬', gift:'🎁', enter:'🚪', follow:'➕'};
+function pushStat(kind){
+  if(kind==='danmaku') stats.dm++;
+  else if(kind==='gift') stats.gift++;
+  else if(kind==='enter') stats.enter++;
+  else if(kind==='follow') stats.follow++;
+  saveJSON('dp3_stats', stats);
+  updateUI();
+}
+function updateUI(){
+  document.getElementById('stQueue').textContent = printQueue.length + (currentTask?1:0);
+  document.getElementById('stDone').textContent = printedItems.length;
+  document.getElementById('stDm').textContent = stats.dm;
+  document.getElementById('stGift').textContent = stats.gift;
+  updateBedInfo();
+}
+function updateBedInfo(){
+  document.getElementById('bedInfo').textContent = `台面成品：${printedItems.length} / ${MAX_SLOTS} 个` + (currentTask?`　打印中：${currentTask.userData.name}`:'');
+}
+function renderQueue(){
+  const box = document.getElementById('queueList');
+  const all = [];
+  if(currentTask) all.push(currentTask);
+  printQueue.forEach(m=>all.push(m));
+  if(!all.length){ box.innerHTML = '<div class="empty">队列为空，去底栏点 🎭 模拟弹幕试试</div>'; return; }
+  box.innerHTML = all.map((m,i)=>{
+    const u = m.userData;
+    const tag = `<span class="tag ${KIND_CLS[u.kind]}">${KIND_ICO[u.kind]}${KIND_TXT[u.kind]}</span>`;
+    const del = `<button class="del" data-qi="${i}" title="移除任务">✕</button>`;
+    const st = m===currentTask ? '<span style="color:var(--neon);font-size:10px">打印中</span>' : '';
+    return `<div class="qitem"><div class="ph">${KIND_ICO[u.kind]}</div><div class="nm">${escapeHtml(u.name)} ${st}</div>${tag}${del}</div>`;
+  }).join('');
+  box.querySelectorAll('.del').forEach(b=>{
+    b.onclick = ()=>{
+      const i = +b.dataset.qi;
+      const m = (currentTask && i===0) ? currentTask : printQueue[i - (currentTask?1:0)];
+      if(m===currentTask){ currentTask=null; scene.remove(m); }
+      else printQueue = printQueue.filter(x=>x!==m);
+      renderQueue(); updateUI();
+    };
+  });
+}
+function addDm(name, text, kind){
+  const flow = document.getElementById('dmFlow');
+  const d = document.createElement('div');
+  d.className = 'dm';
+  d.innerHTML = `<span class="tag ${KIND_CLS[kind]}">${KIND_ICO[kind]}</span><b>${escapeHtml(name)}</b><span class="tx">${escapeHtml(text||'—')}</span>`;
+  flow.prepend(d);
+  while(flow.children.length > 8) flow.lastChild.remove();
+}
+
+/* 历史（增删查改 + 快速重播） */
+function addHistory(item){
+  history.unshift(item);
+  if(history.length > 200) history.length = 200;
+  saveJSON('dp3_hist', history);
+}
+function renderHist(){
+  const kw = (document.getElementById('histKw').value||'').trim().toLowerCase();
+  const list = history.filter(h=>!kw || h.name.toLowerCase().includes(kw));
+  const box = document.getElementById('histList');
+  if(!list.length){ box.innerHTML = '<div class="empty">暂无记录</div>'; return; }
+  box.innerHTML = list.map((h,i)=>`
+    <div class="hitem">
+      <div class="ph">${KIND_ICO[h.kind]||'💬'}</div>
+      <div class="inf"><b>${escapeHtml(h.name)}</b><span>${KIND_TXT[h.kind]||'弹幕'} · ${new Date(h.time).toLocaleString('zh-CN',{hour12:false})}</span></div>
+      <div class="ops">
+        <button title="重新打印" data-rep="${history.indexOf(h)}">🔁</button>
+        <button title="删除" data-del="${history.indexOf(h)}">🗑</button>
+      </div>
+    </div>`).join('');
+  box.querySelectorAll('[data-rep]').forEach(b=>b.onclick=()=>{
+    const h = history[+b.dataset.rep];
+    addPrintTask(h.url, h.name, h.kind, true);
+    toast('🔁 已重新加入打印队列：' + h.name, 'ok');
+    closeM('mHist');
+  });
+  box.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{
+    history.splice(+b.dataset.del, 1);
+    saveJSON('dp3_hist', history);
+    renderHist();
+  });
+}
+function clearHist(){ history=[]; saveJSON('dp3_hist', history); renderHist(); toast('🗑️ 历史已清空'); }
+function exportHist(){
+  const lines = history.map(h=>`${new Date(h.time).toLocaleString('zh-CN',{hour12:false})}\t[${KIND_TXT[h.kind]||'弹幕'}]\t${h.name}`);
+  const blob = new Blob(['直播间3D头像打印机 - 打印历史\n\n' + lines.join('\n')], {type:'text/plain;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `打印历史_${Date.now()}.txt`;
+  a.click();
+  toast('📤 已导出TXT', 'ok');
+}
+
+/* 设置 */
+function openSettings(){
+  document.getElementById('fSpeed').value = CFG.speed;
+  document.getElementById('oSpeed').textContent = (+CFG.speed).toFixed(1)+'x';
+  document.getElementById('fLayer').value = CFG.layer;
+  document.getElementById('oLayer').textContent = CFG.layer+' 层';
+  document.getElementById('fDm').checked = CFG.dm;
+  document.getElementById('fGift').checked = CFG.gift;
+  document.getElementById('fEnter').checked = CFG.enter;
+  document.getElementById('fFollow').checked = CFG.follow;
+  document.getElementById('fFirst').classList.toggle('on', CFG.giftFirst);
+  document.getElementById('fSound').classList.toggle('on', CFG.sound);
+  document.getElementById('fRecycle').classList.toggle('on', CFG.recycle);
+  document.getElementById('fWs').value = CFG.wsUrl;
+  openM('mSet');
+}
+function onSpeed(v){ document.getElementById('oSpeed').textContent = (+v).toFixed(1)+'x'; }
+function onLayer(v){ document.getElementById('oLayer').textContent = v+' 层'; }
+function saveSettings(){
+  CFG.speed = +document.getElementById('fSpeed').value;
+  CFG.layer = +document.getElementById('fLayer').value;
+  CFG.dm = document.getElementById('fDm').checked;
+  CFG.gift = document.getElementById('fGift').checked;
+  CFG.enter = document.getElementById('fEnter').checked;
+  CFG.follow = document.getElementById('fFollow').checked;
+  CFG.giftFirst = document.getElementById('fFirst').classList.contains('on');
+  CFG.sound = document.getElementById('fSound').classList.contains('on');
+  CFG.recycle = document.getElementById('fRecycle').classList.contains('on');
+  const wsNew = document.getElementById('fWs').value.trim() || DEFAULTS.wsUrl;
+  const wsChanged = wsNew !== CFG.wsUrl;
+  CFG.wsUrl = wsNew;
+  saveJSON('dp3_cfg', CFG);
+  if(wsOn && wsChanged){ if(ws){try{ws.close();}catch(e){}} connectWs(); }
+  closeM('mSet');
+  toast('💾 设置已保存', 'ok');
+}
+function resetSettings(){
+  CFG = {...DEFAULTS};
+  saveJSON('dp3_cfg', CFG);
+  openSettings();
+  toast('已恢复默认设置');
+}
+
+/* 清空 */
+function clearQueue(){
+  printQueue.forEach(m=>scene.remove(m));
+  printQueue = [];
+  renderQueue(); updateUI();
+  toast('队列已清空');
+}
+function clearAll(){
+  resumeAudio();
+  printedItems.forEach(m=>{ releaseLabel(m); scene.remove(m); });
+  printedItems = [];
+  if(currentTask){ scene.remove(currentTask); currentTask=null; }
+  renderQueue(); updateUI();
+  toast('🧹 台面已清空');
+}
+function shot(){
+  try{
+    renderer.render(scene, camera); // 确保帧最新
+    const a = document.createElement('a');
+    a.href = renderer.domElement.toDataURL('image/png');
+    a.download = `3D打印台面_${Date.now()}.png`;
+    a.click();
+    toast('📷 截图已保存', 'ok');
+  }catch(e){ toast('截图失败：' + e.message, 'err'); }
+}
+
+/* 模态/toast/术语 */
+function openM(id){ document.getElementById(id).classList.add('show'); resumeAudio(); }
+function closeM(id){ document.getElementById(id).classList.remove('show'); }
+document.querySelectorAll('.modal-mask').forEach(m=>{
+  m.addEventListener('click', e=>{ if(e.target===m) m.classList.remove('show'); });
+});
+function openHistory(){ renderHist(); openM('mHist'); }
+function openHelp(){ openM('mHelp'); }
+function openTerms(){ renderTerms(); openM('mTerm'); }
+function toast(msg, cls){
+  const t = document.createElement('div');
+  t.className = 'toast ' + (cls||'');
+  t.innerHTML = msg;
+  document.getElementById('toasts').appendChild(t);
+  setTimeout(()=>{ t.style.opacity='0'; t.style.transition='opacity .4s'; setTimeout(()=>t.remove(), 420); }, 2600);
+}
+const TERMS = {
+  queue:'打印队列', queueDef:'像食堂打饭排队。每位观众的互动变成一个打印任务，按顺序制作；礼物任务可以插队（可在设置里开关）。',
+  stats:'实时统计', statsDef:'今日数据自动记录在本机浏览器里（不清零 Cookies 就不会丢），换电脑或清浏览器数据会重置。',
+  bed:'打印台', bedDef:'3D打印机的圆形工作台。打印好的头像浮雕会摆上台面展示，台面最多放 25 个，可开自动回收防卡顿。',
+  speed:'打印速度倍率', speedDef:'数字越大打印越快。1.0 是标准速度，直播节奏快可以调到 2x～3x。',
+  layer:'打印层数', layerDef:'3D打印是一层层堆出来的。层数越多，浮雕起伏越细腻，打印时间也稍长。建议 10～16 层。',
+  ws:'弹幕服务地址（WS）', wsDef:'就像"快递收件地址"。你电脑上运行的弹幕抓取工具（如 BLIVE）会把观众消息送到这个地址，程序收货后开始打印。默认 ws://127.0.0.1:2345 一般不用改。',
+  emboss:'浮雕/高度图', embossDef:'把头像图片的明暗变成凹凸起伏：亮的地方凸起来、暗的地方凹下去，于是平面的头像变成了立体浮雕。',
+  slot:'槽位摆放', slotDef:'成品会按同心圆整齐摆放在台面上，不会互相压到（V2随机摆放的毛病已修好）。'
+};
+function renderTerms(){
+  document.getElementById('termList').innerHTML = Object.keys(TERMS).filter(k=>!k.endsWith('Def'))
+    .map(k=>`<div class="term"><b>${TERMS[k]}</b><p>${TERMS[k+'Def']}</p></div>`).join('');
+}
+function termTip(key){
+  if(TERMS[key]){
+    const t = document.createElement('div');
+    t.className='toast';
+    t.style.maxWidth='340px'; t.style.whiteSpace='normal'; t.style.textAlign='left';
+    t.innerHTML = `<b style="color:var(--neon)">${TERMS[key]}</b><br>${TERMS[key+'Def']}`;
+    document.getElementById('toasts').appendChild(t);
+    setTimeout(()=>{ t.style.opacity='0'; t.style.transition='opacity .4s'; setTimeout(()=>t.remove(), 420); }, 4200);
+  }
+}
+
+/* =====================================================
+   ⑫ 动画主循环
+===================================================== */
+function animate(){
+  requestAnimationFrame(animate);
+  orbit.update();
+  updateLabels();
+  stepTweens();
+  stepPrint();
+  // 氛围动效：光环呼吸 + 聚光灯呼吸
+  const T = Date.now();
+  window._ring.material.color.setHSL(0.085, 0.95, 0.56 + 0.10*Math.sin(T*0.002));
+  window._spot.intensity = 0.78 + 0.16*Math.sin(T*0.0012);
+  if(window._beamStrip) window._beamStrip.material.color.setHSL(0.085, 0.9, 0.55 + 0.18*Math.sin(T*0.004));
+  if(window._chand) window._chand.rotation.y += 0.0016;
+  if(window._blade) window._blade.material.emissive.setHSL(0.58, 0.5, 0.04 + 0.05*Math.sin(T*0.003));
+  // 喷头风扇旋转（打印时加速）
+  if(window._fan) window._fan.rotation.y += currentTask ? 0.35 : 0.08;
+  // 料盘缓慢转动
+  if(window._spool) window._spool.rotation.x += 0.004;
+  // 星屑缓慢上升 + 循环
+  if(window._dust){
+    const arr = window._dust.geometry.attributes.position.array;
+    for(let i=1;i<arr.length;i+=3){
+      arr[i] += 0.006;
+      if(arr[i] > 7.2) arr[i] = 0;
+    }
+    window._dust.geometry.attributes.position.needsUpdate = true;
+  }
+  renderer.render(scene, camera);
+}
+
+/* =====================================================
+   ⑬ 启动 + 对外接口（便于其他程序 / OBS 工具调用）
+===================================================== */
+window.DP3 = {
+  version: APP_VER,
+  // 外部程序可直接推送一个打印任务：DP3.print(头像URL, 昵称, 类型)
+  print(url, name, kind){ return addPrintTask(url || '', name || '观众', kind || 'danmaku'); },
+  // 内部弹幕消息入口：DP3.message({type:'comment', nickname:'xx', userFace:'url'})
+  message(raw){ handleIncoming(raw); },
+  clear(){ clearAll(); },
+  stats(){ return {queue: printQueue.length + (currentTask?1:0), printed: printedItems.length, ...stats}; },
+  // 只读调试出口（自检用）
+  _dbg: { get scene(){ return scene; }, get printed(){ return printedItems; },
+          get queue(){ return printQueue; }, get current(){ return currentTask; } }
+};
+(function init(){
+  // 程序体积估算（规则4）
+  try{
+    const kb = (new Blob([document.documentElement.outerHTML]).size/1024).toFixed(0);
+    document.getElementById('fileSize').textContent = `📦 约 ${kb} KB`;
+  }catch(e){ document.getElementById('fileSize').textContent = '📦 单文件版'; }
+  document.getElementById('updDate').textContent = UPD_DATE;
+  boot();
+  // 用户任意一次交互都尝试解锁音频（幂等，反复调用无开销）
+  ['pointerdown','touchstart','click','keydown'].forEach(ev=>
+    document.addEventListener(ev, ()=>unlockAudio(), {passive:true, capture:true}));
+  window.addEventListener('keydown', e=>{ if(e.key==='Escape') document.querySelectorAll('.modal-mask.show').forEach(m=>m.classList.remove('show')); });
+})();
+</script>
+</body>
+</html>
